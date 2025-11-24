@@ -1,0 +1,32 @@
+---
+import "../styles/global.css";
+import Navbar from "../layouts/Navbar.astro";
+import { Font } from "astro:assets";
+
+const {
+  bodyClass = "bg-[#1A1A1A] bg-[image:radial-gradient(#333333_2px,transparent_0)] bg-[size:24px_24px]",
+} = Astro.props;
+// <!-- #FFFFFF1A  ou #333333 pros pontos. Resultado indistinguivel pra mim,
+//  mas n eh identico tecnicamente.
+// Transparencia seria ligeriamente mais ineficiente tb mas desprezivel
+// -->
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro</title>
+
+    <Font cssVariable="--font-montserrat" preload />
+    <Font cssVariable="--font-jetbrains-mono" preload />
+  </head>
+
+  <body class:list={[bodyClass]}>
+    <Navbar />
+    <slot />
+  </body>
+</html>

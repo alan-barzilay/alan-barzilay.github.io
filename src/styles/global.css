@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin '@tailwindcss/typography';
 
 /* experimental utilities for a11y */
 @utility read-order-0 {
@@ -32,3 +33,13 @@
 /* 1c2e24 nao-ativo hsl(146.67, 24.32%, 14.51%)  */
 /* 1f3328 hover     hsl(147, 24.39%, 16.08%) */
 /* --color-mint-500: oklch(0.72 0.11 178); */
+
+.toc-tree {
+  /* @apply [&_ul]:list-none [&_ul]:pl-0; */
+  @apply [&_ul_ul]:pl-4;
+  @apply [&_ul_a]:text-white [&_ul_a]:underline;
+  @apply [&_ul_a:hover]:text-blue-600;
+  /* @apply [&_ul]:list-&#9678 */
+
+  /* ... etc */
+}

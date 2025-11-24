@@ -1,0 +1,54 @@
+---
+import "../styles/global.css";
+import CardContent from "./CardContent.astro";
+
+const { title, tags, img_src, date, read_time, paragrafo } = Astro.props;
+const formattedDate = date.toLocaleDateString("pt-BR");
+---
+
+<div
+  class="relative w-full max-w-4xl min-h-64
+  rounded-md shadow-md shadow-black/25
+  ring-2 ring-inset ring-pcb-ring bg-pcb-green hover:bg-pcb-green-hover
+  flex justify-center group"
+>
+  <!-- absolute firulas douradas -->
+
+  <div
+    class="absolute top-2 left-2 size-[14px] border-[3px] rounded-full
+      bg-dark-grey border-copper"
+  >
+  </div>
+  <div
+    class="absolute top-2 right-2 md:top-auto md:right-auto md:bottom-2 md:left-2
+    size-[14px] border-[3px] rounded-full
+      bg-dark-grey border-copper"
+  >
+  </div>
+
+  <div
+    class="absolute bottom-0 left-1/2 -translate-x-1/2
+     flex flex-row gap-3 flex-auto bg-pcb-green group-hover:bg-pcb-green-hover
+   md:bottom-auto md:left-auto md:-translate-x-0 md:top-1/2 md:-translate-y-1/2 md:right-0
+    md:flex-col"
+  >
+    <!-- 8 laranja, 7 interno verde -->
+
+    <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
+    <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
+    <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
+    <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
+    <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
+    <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
+    <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
+  </div>
+
+  <CardContent
+    title={title}
+    tags={tags}
+    img_src={img_src}
+    date={date}
+    read_time={read_time}
+    paragrafo={paragrafo}
+  />
+</div>

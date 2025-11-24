@@ -2,7 +2,6 @@
 title: "paragrafo saudavel"
 img_src: "test.png"
 date: 2025-11-14
-read_time: 19
 paragrafo: "paragrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsum paragrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsum"
 tags: ["astro", "blogging", "learning"]
 ---

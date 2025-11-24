@@ -2,7 +2,6 @@
 title: "Title Lorem ipsum lorem ipsum Title Lorem ipsum lorem ipsumTitle Lorem ipsum lorem ipsum"
 img_src: "test.png"
 date: 2025-11-14
-read_time: 19
 paragrafo: "paragrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsumparagrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsumparagrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsumparagrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsumparagrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsumparagrafo lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsumlorem ipsum"
 tags: ["astro", "blogging", "learning"]
 ---

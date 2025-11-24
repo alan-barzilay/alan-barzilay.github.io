@@ -1,56 +1,62 @@
 ---
-import { getCollection } from "astro:content";
-import Card from "./card.astro";
-import Navbar from "./Navbar.astro";
-import { Font } from "astro:assets";
+import Card from "../layouts/Card.astro";
+import Layout from "../layouts/Layout.astro";
 
-// This function tells Astro which pages to build
-export async function getStaticPaths() {
-  const blogEntries = await getCollection("blog");
-  return blogEntries.map((entry) => ({
-    params: { slug: entry.slug },
-    props: { entry }, // Pass the full entry as a prop
-  }));
-}
+import { getCollection, render } from "astro:content";
 
-// Get the specific 'entry' for this page
 const posts = await getCollection("blog");
+
+// `posts`` by itself isnt enough, it excludes reamark sutff (like read time),
+// so we need to render/process every post to get this info.
+// This could increase build time but I dont care, everything is pretty instant right now
+const postsWithRenderedData = await Promise.all(
+  posts.map(async (post) => {
+    // Call render() on the entry. This runs the Remark plugins.
+    const { remarkPluginFrontmatter } = await render(post);
+
+    // Combine the original post data with the new injected frontmatter data from Remark plugins
+    return {
+      ...post,
+      data: {
+        ...post.data,
+        // read_time: remarkPluginFrontmatter.minutesRead,
+        read_time: remarkPluginFrontmatter.minutes,
+      },
+    };
+  })
+);
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <title>Astro</title>
+<Layout>
+  <div class="flex flex-col items-center gap-8">
+    {
+      postsWithRenderedData.map((post) => (
+        <Card
+          title={post.data.title}
+          tags={post.data.tags}
+          img_src={post.data.img_src}
+          date={post.data.date}
+          read_time={post.data.read_time}
+          paragrafo={post.data.paragrafo}
+        />
+      ))
+    }
+  </div>
+</Layout>
 
-    <Font cssVariable="--font-montserrat" preload />
-    <Font cssVariable="--font-jetbrains-mono" preload />
-  </head>
-  <!-- #FFFFFF1A  ou #333333 pros pontos. Resultado indistinguivel pra mim, 
-   mas n eh identico tecnicamente.
-  Transparencia seria ligeriamente mais ineficiente tb mas desprezivel 
-  -->
-  <body
-    class="bg-[#1A1A1A] font-mono size
-             bg-[image:radial-gradient(#333333_2px,transparent_0)] bg-[size:24px_24px]"
-  >
-    <Navbar />
-
-    <div class="flex flex-col items-center gap-8">
-      {
-        posts.map((post) => (
-          <Card
-            title={post.data.title}
-            tags={post.data.tags}
-            img_src={post.data.img_src}
-            date={post.data.date}
-            read_time={post.data.read_time}
-            paragrafo={post.data.paragrafo}
-          />
-        ))
-      }
-    </div>
-  </body>
-</html>
+<!-- <Layout>
+  <div class="flex flex-col items-center gap-8">
+    {
+      postsWithRenderedData.map((post) => (
+        <Card
+          title={post.data.title}
+          tags={post.data.tags}
+          img_src={post.data.img_src}
+          date={post.data.date}
+          read_time={post.data.read_time}
+          paragrafo={post.data.paragrafo}
+        />
+      ))
+    }
+  </div>
+</Layout> -->

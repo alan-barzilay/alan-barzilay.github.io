@@ -1,0 +1,61 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CardContent from "../../layouts/CardContent.astro";
+// import HeadingWithSeparator from "../../components/HeadingWithSeparator.astro";
+// import Prose from "../../components/Prose.astro";
+
+import { getCollection, render } from "astro:content";
+// 1. Generate a new path for every collection entry
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+  return posts.map((post) => ({
+    params: { id: post.id },
+    props: { post },
+  }));
+}
+// 2. For your template, you can get the entry directly from the prop
+const { post, body_class = "bg-pcb-green" } = Astro.props;
+const { Content } = await render(post);
+
+// const components = {
+//   h1: (props) => <HeadingWithSeparator level={1} {...props} />,
+//   h2: (props) => <HeadingWithSeparator level={2} {...props} />,
+//   h3: (props) => <HeadingWithSeparator level={3} {...props} />,
+// };
+
+import Heading2 from "../../components/Heading2.astro";
+// Map directly to the component file
+const components = {
+  // h1: Heading1,
+  h2: Heading2,
+  // h3: Heading3, (if you created it)
+};
+---
+
+<Layout bodyClass={body_class}>
+  <div class="relative min-h-64 w-full max-w-4xl mx-auto">
+    <CardContent
+      title={post.data.title}
+      tags={post.data.tags}
+      img_src={post.data.img_src}
+      date={post.data.date}
+      read_time={post.data.read_time}
+      paragrafo={post.data.paragrafo}
+    />
+  </div>
+  <!-- gradiente -->
+  <div
+    class="bg-gradient-to-b from-pcb-green via-[#1B241F] via-66% to-dark-grey h-30 -mt-8"
+  >
+  </div>
+
+  <div class="bg-dark-grey">
+    <!-- <div
+      class="w-[80ch] mx-auto toc-tree
+    [&_h2]:text-5xl [&_h3]:text-4xl [&_h4]:text-3xl [&_h5]:text-2xl [&_h6]:text-xl"
+    > -->
+    <article class="mx-auto prose prose-invert prose-h2:mb-0">
+      <Content components={components} />
+    </article>
+  </div>
+</Layout>
