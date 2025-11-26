@@ -8,7 +8,6 @@ export function remarkReadingTime() {
 
     // data.astro.frontmatter.minutesRead = readingTime.text;     // i.e. "3 min read"
     data.astro.frontmatter.minutes = Math.ceil(readingTime.minutes);     // i.e. "3"
-
   };
 }
 

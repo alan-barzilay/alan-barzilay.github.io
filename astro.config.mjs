@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig, fontProviders  } from 'astro/config';
+import { defineConfig, fontProviders } from 'astro/config';
 
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
@@ -9,17 +9,29 @@ import remarkToc from 'remark-toc';
 import { remarkReadingTime } from './remark-reading-time.mjs';
 // import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
 
+import { visualizer } from 'rollup-plugin-visualizer';
+import rehypeExternalLinks from 'rehype-external-links';
+
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://alanbarzilay.com',
   integrations: [sitemap(), mdx()],
 
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss(), visualizer()]
   },
   markdown: {
-    remarkPlugins: [ remarkReadingTime, [remarkToc, { heading: 'Summary', 
-      maxDepth: 6,
-        } ] ],
+    remarkPlugins: [remarkReadingTime, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
+    rehypePlugins: [
+      [
+        rehypeExternalLinks,
+        {
+          content: { type: 'text', value: ' 🔗' },
+          target: '_blank',
+          rel: ['nofollow', 'noopener'],
+        },
+      ],
+    ],
     // rehypePlugins: [rehypeAccessibleEmojis],
   },
   experimental: {
@@ -34,7 +46,7 @@ export default defineConfig({
       },
       {
         name: "JetBrains Mono",
-        cssVariable: "--font-jetbrains-mono", 
+        cssVariable: "--font-jetbrains-mono",
         provider: fontProviders.google(),
         weights: [400, 900],
         styles: ["normal"],
@@ -42,6 +54,6 @@ export default defineConfig({
         fallbacks: ["monospace"],
       },
     ],
-},
+  },
 });
 

@@ -23,20 +23,27 @@
     <span class="text-4xl text-white">Alan Barzilay</span>
   </a>
 
-  <ul class="flex items-center space-x-8 text-2xl *:hover:text-copper">
+  <ul
+    class="flex items-center space-x-8 text-2xl *:hover:text-copper *:hover:border-copper"
+  >
     <li>
-      <a
-        href="/posts"
-        class="font-medium border-b-3 border-brand-accent pb-1 transition-colors text-copper"
-      >
+      <a href="/posts" class="font-medium border-b-3 transition-colors">
         Posts
       </a>
     </li>
     <li>
-      <a href="/tags" aria-current="page" class="transition-colors"> Tags </a>
+      <a
+        href="/tags"
+        aria-current="page"
+        class="transition-colors border-b-3 border-transparent"
+      >
+        Tags
+      </a>
     </li>
     <li>
-      <a href="/about" class="transition-colors"> About me </a>
+      <a href="/about" class="transition-colors border-b-3 border-transparent">
+        About me
+      </a>
     </li>
   </ul>
 </nav>
