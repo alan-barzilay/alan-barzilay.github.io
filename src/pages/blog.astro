@@ -3,7 +3,6 @@ import Card from "../layouts/Card.astro";
 import Layout from "../layouts/Layout.astro";
 
 import { getCollection, render } from "astro:content";
-
 const posts = await getCollection("blog");
 
 // `posts`` by itself isnt enough, it excludes reamark sutff (like read time),
@@ -25,12 +24,18 @@ const postsWithRenderedData = await Promise.all(
     };
   }),
 );
+// Sort posts by date, newest first
+const sortedPosts = postsWithRenderedData.sort((a, b) => {
+  const dateA = new Date(a.data.date);
+  const dateB = new Date(b.data.date);
+  return dateB.getTime() - dateA.getTime();
+});
 ---
 
 <Layout>
   <div class="flex flex-col items-center gap-8">
     {
-      postsWithRenderedData.map((post) => (
+      sortedPosts.map((post) => (
         <Card
           slug={post.data.slug || post.id}
           title={post.data.title}
@@ -43,21 +48,5 @@ const postsWithRenderedData = await Promise.all(
       ))
     }
   </div>
+  <footer class="h-8"></footer>
 </Layout>
-
-<!-- <Layout>
-  <div class="flex flex-col items-center gap-8">
-    {
-      postsWithRenderedData.map((post) => (
-        <Card
-          title={post.data.title}
-          tags={post.data.tags}
-          img_src={post.data.img_src}
-          date={post.data.date}
-          read_time={post.data.read_time}
-          paragrafo={post.data.paragrafo}
-        />
-      ))
-    }
-  </div>
-</Layout> -->

@@ -4,6 +4,7 @@ import Navbar from "../layouts/Navbar.astro";
 import { Font } from "astro:assets";
 
 const {
+  title = "Astro",
   bodyClass = "bg-[#1A1A1A] bg-[image:radial-gradient(#333333_2px,transparent_0)] bg-[size:24px_24px]",
 } = Astro.props;
 // <!-- #FFFFFF1A  ou #333333 pros pontos. Resultado indistinguivel pra mim,
@@ -19,7 +20,13 @@ const {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+      integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
+      crossorigin="anonymous"
+    />
+    <title>{title}</title>
 
     <Font cssVariable="--font-montserrat" preload />
     <Font cssVariable="--font-jetbrains-mono" preload />

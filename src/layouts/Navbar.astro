@@ -1,5 +1,5 @@
 ---
-import Logo from "../images/Logo.astro
+import Logo from "../images/logo.svg";
 const { pathname } = Astro.url;
 const isActive = (path: string) => pathname === path || pathname === `${path}/`;
 
@@ -17,7 +17,7 @@ const navItems = [
   mb-12 mt-2 font-sans"
 >
   <a href="/" class="flex items-center gap-3">
-    <Logo />
+    <Logo class="fill-current text-copper" />
     <span class="text-4xl text-white">Alan Barzilay</span>
   </a>
 

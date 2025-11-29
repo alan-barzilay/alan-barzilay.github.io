@@ -83,14 +83,16 @@ const postsByTag = tags.reduce(
     </div>
 </Layout>
 
-<!-- this breaks with emojis -->
 <script>
     // No idea why there is no native html solution for this,
     // but there also wasnt native html accordions, so i guess baby steps?
     const hash = window.location.hash;
 
     if (hash) {
-        const element = document.querySelector(hash);
+        // Remove the '#' and decode URI to handle emojis and special characters
+        // (emojis in URLs get encoded, e.g., 🎉 becomes %F0%9F%8E%89)
+        const elementId = decodeURIComponent(hash.slice(1));
+        const element = document.getElementById(elementId);
 
         // Use .matches() for cleaner, case-insensitive checking
         if (element && element.matches("details")) {

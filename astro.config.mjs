@@ -1,38 +1,40 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 
-import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
+import sitemap from '@astrojs/sitemap';
 import mdx from '@astrojs/mdx';
 
 import remarkToc from 'remark-toc';
 import { remarkReadingTime } from './remark-reading-time.mjs';
-// import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
+import remarkMath from 'remark-math';
 
 import { visualizer } from 'rollup-plugin-visualizer';
-import rehypeExternalLinks from 'rehype-external-links';
 
-// https://astro.build/config
+import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
+import rehypeExternalLinks from 'rehype-external-links';
+import rehypeKatex from 'rehype-katex';
+
 export default defineConfig({
-  site: 'https://alanbarzilay.com',
+  site: 'https://alan-barzilay.github.io',
   integrations: [sitemap(), mdx()],
 
   vite: {
     plugins: [tailwindcss(), visualizer()]
   },
   markdown: {
-    remarkPlugins: [remarkReadingTime, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
+    remarkPlugins: [remarkReadingTime, remarkMath, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
     rehypePlugins: [
       [
         rehypeExternalLinks,
         {
-          content: { type: 'text', value: ' 🔗' },
+          content: { type: 'text', value: ' ↗' },
           target: '_blank',
           rel: ['nofollow', 'noopener'],
         },
       ],
+      rehypeKatex, rehypeAccessibleEmojis
     ],
-    // rehypePlugins: [rehypeAccessibleEmojis],
   },
   experimental: {
     fonts: [

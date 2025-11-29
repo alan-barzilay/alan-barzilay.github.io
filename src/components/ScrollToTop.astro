@@ -1,0 +1,64 @@
+---
+// Scroll-to-top button
+---
+
+<button
+    id="scroll-to-top"
+    aria-label="Scroll to top"
+    title="Back to top"
+    class="fixed bottom-8 right-8 z-30
+        flex h-12 w-12 items-center justify-center
+        rounded-full border-2 border-white/20
+        text-white cursor-pointer
+        transition-all duration-300 ease-in-out
+        
+        /* Initial State: Hidden and pushed down */
+        invisible opacity-0 translate-y-24
+        
+        /* Visible State (triggered by JS adding '.visible' class) */
+        [&.visible]:visible [&.visible]:opacity-100 [&.visible]:translate-y-0
+        
+        /* Hover State */
+        hover:scale-110
+        
+        /* Active State */
+        active:scale-95"
+>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+</button>
+
+<script>
+    const scrollToTopButton = document.getElementById("scroll-to-top");
+
+    function handleScroll() {
+        if (window.scrollY > 300) {
+            scrollToTopButton?.classList.add("visible");
+        } else {
+            scrollToTopButton?.classList.remove("visible");
+        }
+    }
+
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+
+    window.addEventListener("scroll", handleScroll);
+    scrollToTopButton?.addEventListener("click", scrollToTop);
+
+    // Check on load in case the user refreshes halfway down the page
+    handleScroll();
+</script>
