@@ -23,7 +23,7 @@ const postsWithRenderedData = await Promise.all(
         read_time: remarkPluginFrontmatter.minutes,
       },
     };
-  })
+  }),
 );
 ---
 
@@ -32,6 +32,7 @@ const postsWithRenderedData = await Promise.all(
     {
       postsWithRenderedData.map((post) => (
         <Card
+          slug={post.data.slug || post.id}
           title={post.data.title}
           tags={post.data.tags}
           img_src={post.data.img_src}

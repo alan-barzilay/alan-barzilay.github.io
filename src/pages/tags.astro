@@ -1,0 +1,106 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getCollection } from "astro:content";
+
+const posts = await getCollection("blog");
+
+const tags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
+
+const postsByTag = tags.reduce(
+    (acc, tag) => {
+        acc[tag] = posts
+            .filter((post) => post.data.tags.includes(tag))
+            .sort(
+                (a, b) =>
+                    new Date(b.data.date).valueOf() -
+                    new Date(a.data.date).valueOf(),
+            );
+        return acc;
+    },
+    {} as Record<string, typeof posts>,
+);
+---
+
+<Layout>
+    <div class="max-w-4xl mx-auto p-8 text-white min-h-screen">
+        <div class="bg-[#232323] rounded-lg shadow-lg overflow-hidden">
+            {
+                tags.map((tag, index) => (
+                    <details
+                        id={tag}
+                        name="tags-accordion"
+                        class="group border-b border-gray-700 last:border-b-0 scroll-mt-24"
+                    >
+                        <summary
+                            class="cursor-pointer p-6 font-semibold text-trace-green
+                        flex justify-between items-center list-none select-none 
+                        hover:bg-white/5 transition-colors"
+                        >
+                            <a href={`#${tag}`} class="text-2xl ">
+                                # {tag}
+                            </a>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="white"
+                                class="w-6 h-6 transition-transform duration-300 group-open:rotate-180"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                                />
+                            </svg>
+                        </summary>
+                        <ul class="px-12 pb-6 pt-0 space-y-3 bg-[#232323]">
+                            {postsByTag[tag].map((post) => (
+                                <li class="flex justify-between gap-4 mt-4 first:mt-2 ">
+                                    <a
+                                        href={`/blog/${post.id}`}
+                                        class="pr-10 text-lg hover:text-trace-green transition-colors  flex-1"
+                                    >
+                                        {post.data.title}
+                                    </a>
+                                    <span class="mt-auto text-sm text-gray-400 font-mono flex-shrink-0">
+                                        {post.data.date.toLocaleDateString(
+                                            "en-UK", // quero em ingles e q seja DDMMYYYY
+                                            {
+                                                year: "numeric",
+                                                month: "short",
+                                                day: "numeric",
+                                            },
+                                        )}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </details>
+                ))
+            }
+        </div>
+    </div>
+</Layout>
+
+<!-- this breaks with emojis -->
+<script>
+    // No idea why there is no native html solution for this,
+    // but there also wasnt native html accordions, so i guess baby steps?
+    const hash = window.location.hash;
+
+    if (hash) {
+        const element = document.querySelector(hash);
+
+        // Use .matches() for cleaner, case-insensitive checking
+        if (element && element.matches("details")) {
+            // 1. Open the accordion
+            element.open = true;
+
+            // 2. Re-align the view (wait a tick to ensure styles applied)
+            // This ensures the user sees the START of the opened accordion
+            // (personally i dont 100% love this behavior but I dont want to pick a fight with SEO bots)
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }
+</script>

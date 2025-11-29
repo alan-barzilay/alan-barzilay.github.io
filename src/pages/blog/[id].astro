@@ -43,13 +43,14 @@ const components = {
       paragrafo={post.data.paragrafo}
     />
   </div>
-  <!-- gradiente -->
-  <div
-    class="bg-gradient-to-b from-pcb-green via-[#1B241F] via-66% to-dark-grey h-32 -mt-8"
-  >
-  </div>
 
   <div class="bg-dark-grey">
+    <!-- gradiente -->
+    <div
+      class="bg-gradient-to-b from-pcb-green via-[#1B241F] via-66% to-dark-grey h-32 -mt-8"
+    >
+    </div>
+
     <!-- <div
       class="w-[80ch] mx-auto toc-tree
     [&_h2]:text-5xl [&_h3]:text-4xl [&_h4]:text-3xl [&_h5]:text-2xl [&_h6]:text-xl"
@@ -57,5 +58,6 @@ const components = {
     <article class="mx-auto prose prose-invert prose-h2:mb-0">
       <Content components={components} />
     </article>
+    <footer class="h-24"></footer>
   </div>
 </Layout>

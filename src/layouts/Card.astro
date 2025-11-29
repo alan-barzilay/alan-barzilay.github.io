@@ -2,7 +2,7 @@
 import "../styles/global.css";
 import CardContent from "./CardContent.astro";
 
-const { title, tags, img_src, date, read_time, paragrafo } = Astro.props;
+const { slug, title, tags, img_src, date, read_time, paragrafo } = Astro.props;
 const formattedDate = date.toLocaleDateString("pt-BR");
 ---
 
@@ -12,6 +12,10 @@ const formattedDate = date.toLocaleDateString("pt-BR");
   ring-2 ring-inset ring-pcb-ring bg-pcb-green hover:bg-pcb-green-hover
   flex justify-center group"
 >
+  <!-- Make it clickable (i hate this solution and acessibility must be shit, besides reading the title twice) -->
+  <a href={`/blog/${slug}`} class="absolute inset-0 z-10" aria-label={title}
+  ></a>
+
   <!-- absolute firulas douradas -->
 
   <div
@@ -42,7 +46,6 @@ const formattedDate = date.toLocaleDateString("pt-BR");
     <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
     <div class="bg-copper h-5 w-1.75 md:h-1.75 md:w-5"></div>
   </div>
-
   <CardContent
     title={title}
     tags={tags}

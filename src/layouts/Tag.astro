@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 const { tag } = Astro.props;
+const tagUrl = `${import.meta.env.BASE_URL}tags/#${tag}`;
 ---
 
 <div
@@ -10,7 +11,8 @@ const { tag } = Astro.props;
     class="absolute top-0.5 right-0.5 size-1 bg-subtext-grey group-hover/tag:bg-white rounded-full"
   >
   </div>
-  <p class="pr-1">
+  <!-- odeio esse z-20 -->
+  <a href={tagUrl} class="relative z-20 pr-1">
     {tag}
-  </p>
+  </a>
 </div>

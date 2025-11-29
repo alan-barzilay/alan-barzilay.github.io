@@ -6,12 +6,13 @@ const props = Astro.props;
 <div class="w-fit">
   <h2 {...props}><slot /></h2>
 
-  <div class="flex text-trace-green h-auto">
+  <div class="flex text-trace-green">
     <svg
+      class="shrink-0"
       aria-hidden="true"
-      width="133"
+      width="53"
       height="24"
-      viewBox="-2 -2 133 24"
+      viewBox="-2 -2 53 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -19,13 +20,14 @@ const props = Astro.props;
       ></circle>
 
       <path
-        d="M 13 7 L 118 7 L 128 14 L 133 14"
+        d="M 13 7 L 38 7 L 48 14 L 53 14"
         stroke="currentColor"
         stroke-width="3"></path>
     </svg>
     <svg
       aria-hidden="true"
-      class="w-full"
+      class="flex-1 min-w-4"
+      width="1"
       height="24"
       viewBox="0 0 100 24"
       preserveAspectRatio="none"
@@ -44,7 +46,7 @@ const props = Astro.props;
 
     <svg
       aria-hidden="true"
-      class="-ml-px"
+      class="-ml-px shrink-0"
       width="14"
       height="24"
       viewBox="0 0 14 24"

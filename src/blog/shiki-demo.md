@@ -6,7 +6,7 @@ img_src: "/imagemsite.png"
 paragrafo: "A simple post to demonstrate Shiki syntax highlighting in Astro."
 ---
 
-# Hello Shiki
+## Hello Shiki
 
 This is a code block with syntax highlighting powered by Shiki.
 
@@ -20,8 +20,9 @@ function hello() {
 ```
 
 ```python
-def hello():
+def hello() {
     print("Hello, world!")
+}
 ```
 
 ```css
@@ -29,3 +30,22 @@ def hello():
   color: red;
 }
 ```
+
+## External Link Icon Options
+
+Here is how different icons would look like (mocked):
+
+### Minimalist / Arrows
+*   [North East Arrow](#) ↗
+*   [North East Double Arrow](#) ⇗
+*   [Open-outlined Right Arrow](#) ➾
+
+### Window / Tab Metaphors
+*   [Two Joined Squares](#) ⧉
+*   [Lower Right Shadowed White Square](#) ❐
+*   [Upper Right Shadowed White Square](#) ❏
+
+### Other Icons
+*   [Globe](#) 🌐
+*   [Airplane](#) ✈
+*   [Current Configured](#) 🔗
