@@ -37,6 +37,7 @@ const sortedPosts = postsWithRenderedData.sort((a, b) => {
     {
       sortedPosts.map((post) => (
         <Card
+          draft={post.data.draft}
           slug={post.data.slug || post.id}
           title={post.data.title}
           tags={post.data.tags}

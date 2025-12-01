@@ -2,15 +2,16 @@
 import "../styles/global.css";
 import CardContent from "./CardContent.astro";
 
-const { slug, title, tags, img_src, date, read_time, paragrafo } = Astro.props;
+const { slug, title, tags, img_src, date, read_time, paragrafo, draft } =
+  Astro.props;
 const formattedDate = date.toLocaleDateString("pt-BR");
 ---
 
 <div
-  class="relative w-full max-w-4xl min-h-64
-  rounded-md shadow-md shadow-black/25
-  ring-2 ring-inset ring-pcb-ring bg-pcb-green hover:bg-pcb-green-hover
-  flex justify-center group"
+  class:list={[
+    "relative w-full max-w-4xl min-h-64 rounded-md shadow-md shadow-black/25 ring-2 ring-inset ring-pcb-ring bg-pcb-green hover:bg-pcb-green-hover flex justify-center group",
+    draft ? "draft hidden" : "",
+  ]}
 >
   <!-- Make it clickable (i hate this solution and acessibility must be shit, besides reading the title twice) -->
   <a href={`/blog/${slug}`} class="absolute inset-0 z-10" aria-label={title}
