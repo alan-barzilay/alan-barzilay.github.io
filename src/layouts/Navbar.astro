@@ -12,17 +12,21 @@ const navItems = [
 
 <nav
   class="text-white mx-auto max-w-7xl
-  px-4 sm:px-6 lg:px-8
-  flex h-20 items-center justify-between
+  h-20
+  px-4 lg:px-8
+  flex items-center justify-between gap-x-6
   mb-12 mt-2 font-sans"
 >
   <a href="/" class="flex items-center gap-3">
     <Logo class="fill-current text-copper" />
-    <span class="text-4xl text-white">Alan Barzilay</span>
+    <span class="text-4xl
+      text-white sr-only sm:not-sr-only"
+      >Alan Barzilay</span
+    >
   </a>
 
   <ul
-    class="flex items-center space-x-8 text-2xl *:pb-1 *:hover:border-b-3 *:hover:border-copper *:hover:text-copper *:transition-colors"
+    class="flex items-center gap-x-6 lg:gap-x-8 md:text-2xl text-xl *:pb-1 *:hover:border-b-3 *:hover:border-copper *:hover:text-copper *:transition-colors"
   >
     {
       navItems.map(({ href, label }) => (

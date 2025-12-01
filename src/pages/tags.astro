@@ -22,7 +22,9 @@ const postsByTag = tags.reduce(
 ---
 
 <Layout>
-    <div class="max-w-4xl mx-auto p-8 text-white min-h-screen">
+    <div
+        class="max-w-4xl mx-auto md:px-8 md:pb-8 px-4 pt-0 pb-4 text-white min-h-screen"
+    >
         <div class="bg-[#232323] rounded-lg shadow-lg overflow-hidden">
             {
                 tags.map((tag, index) => (
@@ -36,7 +38,7 @@ const postsByTag = tags.reduce(
                         flex justify-between items-center list-none select-none 
                         hover:bg-white/5 transition-colors"
                         >
-                            <a href={`#${tag}`} class="text-2xl ">
+                            <a href={`#${tag}`} class="md:text-2xl text-xl ">
                                 # {tag}
                             </a>
                             <svg
@@ -45,7 +47,7 @@ const postsByTag = tags.reduce(
                                 viewBox="0 0 24 24"
                                 stroke-width="1.5"
                                 stroke="white"
-                                class="w-6 h-6 transition-transform duration-300 group-open:rotate-180"
+                                class="w-6 h-6 flex-shrink-0 transition-transform duration-300 group-open:rotate-180"
                             >
                                 <path
                                     stroke-linecap="round"
