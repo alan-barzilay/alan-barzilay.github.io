@@ -11,6 +11,7 @@ const blog = defineCollection({
     // alt: z.string(),
     // }),
     img_src: z.string().optional(),
+    alt_text: z.string().optional(),
     tags: z.array(z.string()),
     date: z.date(),
     minutes: z.string().optional(),

@@ -2,7 +2,8 @@
 import "../styles/global.css";
 import Tag from "./Tag.astro";
 
-const { title, tags, img_src, date, read_time, paragrafo } = Astro.props;
+const { title, tags, img_src, alt_text, date, read_time, paragrafo } =
+  Astro.props;
 const formattedDate = date.toLocaleDateString("pt-BR");
 ---
 
@@ -15,6 +16,7 @@ const formattedDate = date.toLocaleDateString("pt-BR");
   <img
     class="read-order-2 order-2 md:order-1 md:row-span-2 m-auto min-w-52 size-52 bg-dark-grey p-4 shadow-md shadow-black/25"
     src="/imagemsite.png"
+    alt={alt_text}
   />
   <!-- texto -->
   <!-- header do card -->

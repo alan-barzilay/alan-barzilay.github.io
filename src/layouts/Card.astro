@@ -2,8 +2,17 @@
 import "../styles/global.css";
 import CardContent from "./CardContent.astro";
 
-const { slug, title, tags, img_src, date, read_time, paragrafo, draft } =
-  Astro.props;
+const {
+  slug,
+  title,
+  tags,
+  img_src,
+  alt_text,
+  date,
+  read_time,
+  paragrafo,
+  draft,
+} = Astro.props;
 const formattedDate = date.toLocaleDateString("pt-BR");
 ---
 
@@ -51,6 +60,7 @@ const formattedDate = date.toLocaleDateString("pt-BR");
     title={title}
     tags={tags}
     img_src={img_src}
+    alt_text={alt_text}
     date={date}
     read_time={read_time}
     paragrafo={paragrafo}
