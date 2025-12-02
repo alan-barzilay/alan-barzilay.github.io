@@ -1,5 +1,7 @@
 .lixo/
+.vscode/
 screenshots/
+
 # build output
 dist/
 # generated types
