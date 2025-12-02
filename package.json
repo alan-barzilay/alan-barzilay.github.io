@@ -4,11 +4,18 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "record": "node make_timelapse.js",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.13.2"
+    "@astrojs/sitemap": "^3.5.0",
+    "@tailwindcss/vite": "^4.1.12",
+    "astro": "^5.13.2",
+    "tailwindcss": "^4.1.12"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.24.0"
   }
 }

@@ -1,3 +1,5 @@
+.lixo/
+screenshots/
 # build output
 dist/
 # generated types

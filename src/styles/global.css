@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+/* experimental utilities for a11y */
+@utility read-order-0 {
+  reading-order: 0;
+}
+@utility read-order-1 {
+  reading-order: 1;
+}
+@utility read-order-2 {
+  reading-order: 2;
+}
+
+@theme {
+  --color-copper: #b87333;
+
+  --color-trace-green: #2e7b50;
+  --color-pcb-green: #1c2e24;
+  --color-pcb-green-hover: #1f3328;
+  --color-pcb-ring: #365a46;
+
+  --color-dark-grey: #1a1a1a;
+
+  --color-subtext-grey: #9097a2;
+
+  --drop-shadow-b: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* pcbgreen?
+1B2D23 */
+
+/* 1c2e24 nao-ativo hsl(146.67, 24.32%, 14.51%)  */
+/* 1f3328 hover     hsl(147, 24.39%, 16.08%) */
+/* --color-mint-500: oklch(0.72 0.11 178); */

@@ -1,0 +1,16 @@
+---
+import "../styles/global.css";
+const { tag } = Astro.props;
+---
+
+<div
+  class="relative h-fit bg-dark-grey text-subtext-grey hover:text-white px-1 text-xs text-center group/tag"
+>
+  <div
+    class="absolute top-0.5 right-0.5 size-1 bg-subtext-grey group-hover/tag:bg-white rounded-full"
+  >
+  </div>
+  <p class="pr-1">
+    {tag}
+  </p>
+</div>
