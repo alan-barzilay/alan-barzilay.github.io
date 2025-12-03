@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { getCollection } from "astro:content";
+import ChevronDown from "../images/SVGs/chevron-down.svg";
 
 const posts = await getCollection("blog");
 
@@ -41,20 +42,7 @@ const postsByTag = tags.reduce(
                             <a href={`#${tag}`} class="md:text-2xl text-xl ">
                                 # {tag}
                             </a>
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke-width="1.5"
-                                stroke="white"
-                                class="w-6 h-6 flex-shrink-0 transition-transform duration-300 group-open:rotate-180"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                                />
-                            </svg>
+                            <ChevronDown class="w-6 h-6 flex-shrink-0 transition-transform duration-300 group-open:rotate-180" />
                         </summary>
                         <ul class="px-12 pb-6 pt-0 space-y-3 bg-[#232323]">
                             {postsByTag[tag].map((post) => (
