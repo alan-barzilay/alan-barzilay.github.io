@@ -1,15 +1,17 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import GithubLogo from "../images/SVGs/github-mark-white.svg";
+import LinkedinLogo from "../images/SVGs/linkedin.svg";
 ---
 
 <Layout>
     <div
-        class="mx-auto md:px-6 md:pb-8 max-w-4xl prose prose-invert prose-a:text-trace-green"
+        class="mx-auto px-6 pb-10 max-w-5xl prose prose-invert prose-a:text-trace-green"
     >
-        <div class="bg-[#232323] rounded-lg shadow-lg p-6 w-full">
-            <p class="text-2xl">
-                <span class="text-5xl px-6 font-bold text-copper">Hey!</span> My
-                name is Alan and I code for a living.
+        <div class="bg-[#232323] rounded-lg shadow-lg p-8 w-full">
+            <p class="text-3xl mt-0">
+                <span class="text-7xl px-6 font-bold text-copper">Hey!</span> My
+                name is Alan Barzilay and I code for a living.
             </p>
 
             <p>
@@ -33,13 +35,22 @@ import Layout from "../layouts/Layout.astro";
                 <p>
                     I originally created this blog <s
                         >to virtue signal and write hacker news bait</s
-                    > share my passion for data science and software development....
+                    > share my passion for data science and software development...
                     but it kinda devolved into a showcase of my projects and whatever
                     is my latest hyper-fixation. If I managed to interest you enough,
                     you can keep up with my latest posts through my <a
                         href="/rss.xml">RSS feed</a
                     >. Or if I failed really hard, you can forward your hate
-                    mail directly to my social medias:
+                    mail directly to my social medias: <span
+                        class="inline-flex flex-row gap-3 align-middle pl-2"
+                        ><a href="https://github.com/alan-barzilay"
+                            ><GithubLogo /></a
+                        >
+                        <a
+                            href="https://www.linkedin.com/in/alan-barzilay-58754855/"
+                            ><LinkedinLogo /></a
+                        ></span
+                    >
                 </p>
                 <hr class="border-gray-700" />
                 <p>
