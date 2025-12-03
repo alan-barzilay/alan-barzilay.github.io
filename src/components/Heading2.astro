@@ -1,11 +1,15 @@
 ---
-const props = Astro.props;
+const { class: className, id, ...rest } = Astro.props;
+const isFootnote = id === "footnote-label";
+const finalClass = isFootnote
+  ? (className || "").replace("sr-only", "").trim()
+  : className;
 ---
 
 <div class="w-fit">
-  <h2 {...props}><slot /></h2>
-
-  <div class="flex text-trace-green">
+  <h2 id={id} class={finalClass} {...rest}><slot /></h2>
+  <div class="flex
+text-trace-green">
     <svg
       class="shrink-0"
       aria-hidden="true"
@@ -17,7 +21,6 @@ const props = Astro.props;
     >
       <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="3"
       ></circle>
-
       <path
         d="M 13 7 L 38 7 L 48 14 L 53 14"
         stroke="currentColor"
@@ -42,7 +45,6 @@ const props = Astro.props;
         stroke-width="3"
         vector-effect="non-scaling-stroke"></line>
     </svg>
-
     <svg
       aria-hidden="true"
       class="-ml-px shrink-0"
