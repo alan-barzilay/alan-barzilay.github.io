@@ -23,6 +23,9 @@
 }
 
 @theme {
+  --breakpoint-xs: 475px;
+
+
   --color-copper: #b87333;
 
   --color-trace-green: #2e7b50;
