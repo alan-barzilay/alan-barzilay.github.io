@@ -14,6 +14,8 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
 import rehypeExternalLinks from 'rehype-external-links';
 import rehypeKatex from 'rehype-katex';
+import { rehypeHeadingIds } from '@astrojs/markdown-remark';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 export default defineConfig({
   site: 'https://alan-barzilay.github.io',
@@ -33,7 +35,21 @@ export default defineConfig({
           rel: ['nofollow', 'noopener'],
         },
       ],
-      rehypeKatex, rehypeAccessibleEmojis
+      rehypeKatex, rehypeAccessibleEmojis,
+
+      rehypeHeadingIds, // precisa rodar antes de rehypeAutolinkHeadings pros ids existirem na hora de associar os links
+      [
+        rehypeAutolinkHeadings,
+        {
+          behavior: 'append',
+          properties: {
+            className: ['anchor-link'], // class to be styled in Tailwind
+            ariaHidden: 'true',
+            tabIndex: -1
+          },
+          content: { type: 'text', value: '#' },
+        },
+      ],
     ],
   },
   experimental: {

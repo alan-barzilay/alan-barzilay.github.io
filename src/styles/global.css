@@ -47,26 +47,20 @@
 /* 1f3328 hover     hsl(147, 24.39%, 16.08%) */
 /* --color-mint-500: oklch(0.72 0.11 178); */
 
-/* Stretched link pattern for clickable cards */
-/* .stretched-link {
-  position: static;
-  color: inherit;
-  text-decoration: none;
+
+
+
+@layer components {
+  .anchor-link {
+    @apply mx-3 not-prose text-slate-400 opacity-0 transition-opacity duration-200 no-underline;
 }
 
-.stretched-link::after {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  content: "";
-} */
-
-.toc-tree {
-  /* @apply [&_ul]:list-none [&_ul]:pl-0; */
-  @apply [&_ul_ul]:pl-4;
-  @apply [&_ul_a]:text-white [&_ul_a]:underline;
-  @apply [&_ul_a:hover]:text-blue-600;
-  /* @apply [&_ul]:list-&#9678 */
-
-  /* ... etc */
+  h1:hover .anchor-link,
+  h2:hover .anchor-link,
+  h3:hover .anchor-link,
+  h4:hover .anchor-link,
+  h5:hover .anchor-link,
+  h6:hover .anchor-link {
+    @apply opacity-100;
+  }
 }
