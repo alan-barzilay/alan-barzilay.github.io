@@ -12,7 +12,8 @@ export async function getStaticPaths() {
   }));
 }
 
-const { post, body_class = "bg-pcb-green" } = Astro.props;
+const { post, body_class = "bg-pcb-green flex flex-col min-h-screen" } =
+  Astro.props;
 const { Content, remarkPluginFrontmatter } = await render(post);
 
 import Heading2 from "../../components/Heading2.astro";

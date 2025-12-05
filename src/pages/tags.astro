@@ -3,6 +3,17 @@ import Layout from "../layouts/Layout.astro";
 import { getCollection } from "astro:content";
 import ChevronDown from "../images/SVGs/chevron-down.svg";
 
+const mobileFmt: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+};
+const desktopFmt: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+};
+
 const posts = await getCollection("blog");
 
 const tags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
@@ -44,25 +55,31 @@ const postsByTag = tags.reduce(
                             </a>
                             <ChevronDown class="w-6 h-6 flex-shrink-0 transition-transform duration-300 group-open:rotate-180" />
                         </summary>
-                        <ul class="px-12 pb-6 pt-0 space-y-3 bg-[#232323]">
+                        <ul class="sm:px-12 pl-6 pr-3 pb-6 pt-0 space-y-3 bg-[#232323]">
                             {postsByTag[tag].map((post) => (
-                                <li class="flex justify-between gap-4 mt-4 first:mt-2 ">
+                                <li class="flex justify-between gap-3 sm:gap-4 mt-4 first:mt-2 ">
                                     <a
                                         href={`/blog/${post.id}`}
-                                        class="pr-10 text-lg hover:text-trace-green transition-colors  flex-1"
+                                        class="sm:pr-10 text-base sm:text-lg hover:text-trace-green transition-colors  flex-1"
                                     >
                                         {post.data.title}
                                     </a>
-                                    <span class="mt-auto text-sm text-gray-400 font-mono flex-shrink-0">
-                                        {post.data.date.toLocaleDateString(
-                                            "en-UK", // quero em ingles e q seja DDMMYYYY
-                                            {
-                                                year: "numeric",
-                                                month: "short",
-                                                day: "numeric",
-                                            },
+                                    <time
+                                        datetime={post.data.date.toISOString()}
+                                        class="mt-auto text-xs sm:text-sm text-gray-400 font-mono flex-shrink-0 before:content-[attr(data-mobile)] md:before:content-[attr(data-desktop)]"
+                                        data-mobile={post.data.date.toLocaleDateString(
+                                            "en-GB",
+                                            mobileFmt,
                                         )}
-                                    </span>
+                                        data-desktop={post.data.date.toLocaleDateString(
+                                            "en-GB",
+                                            desktopFmt,
+                                        )}
+                                        aria-label={post.data.date.toLocaleDateString(
+                                            "en-GB",
+                                            desktopFmt,
+                                        )}
+                                    />
                                 </li>
                             ))}
                         </ul>
@@ -80,16 +97,15 @@ const postsByTag = tags.reduce(
 
     if (hash) {
         // Remove the '#' and decode URI to handle emojis and special characters
-        // (emojis in URLs get encoded, e.g., 🎉 becomes %F0%9F%8E%89)
+        // (emojis in URLs get encoded, e.g. 🎉 becomes %F0%9F%8E%89)
         const elementId = decodeURIComponent(hash.slice(1));
         const element = document.getElementById(elementId);
 
-        // Use .matches() for cleaner, case-insensitive checking
         if (element && element.matches("details")) {
-            // 1. Open the accordion
+            // Open the accordion
             element.open = true;
 
-            // 2. Re-align the view (wait a tick to ensure styles applied)
+            // Re-align the view (wait a tick to ensure styles applied)
             // This ensures the user sees the START of the opened accordion
             // (personally i dont 100% love this behavior but I dont want to pick a fight with SEO bots)
             element.scrollIntoView({ behavior: "smooth", block: "start" });
