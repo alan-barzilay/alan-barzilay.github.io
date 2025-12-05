@@ -52,7 +52,7 @@
 
 @layer components {
   .anchor-link {
-    @apply mx-3 not-prose text-slate-400 opacity-0 transition-opacity duration-200 no-underline;
+    @apply mx-3 !text-slate-400 opacity-0 transition-opacity duration-200 !no-underline;
 }
 
   h1:hover .anchor-link,
