@@ -7,9 +7,9 @@ import ChevronDown from "../images/SVGs/chevron-down.svg";
     id="scroll-to-top"
     aria-label="Scroll to top"
     title="Back to top"
-    class="fixed bottom-8 right-8 z-30
+    class="fixed bottom-8 right-8 z-50
         flex h-12 w-12 items-center justify-center
-        rounded-full border-2 border-white/20 bg-dark-grey
+        rounded-full border-2 border-white/20
         text-white cursor-pointer
         transition-all duration-300 ease-in-out
         
@@ -31,12 +31,33 @@ import ChevronDown from "../images/SVGs/chevron-down.svg";
 <script>
     const scrollToTopButton = document.getElementById("scroll-to-top");
 
+    let lastScrollY = window.scrollY;
+
     function handleScroll() {
-        if (window.scrollY > 300) {
-            scrollToTopButton?.classList.add("visible");
+        const currentScrollY = window.scrollY;
+        const isSmallScreen = window.matchMedia("(max-width: 768px)").matches; // md breakpoint
+
+        // Basic visibility check based on scroll position
+        if (currentScrollY > 300) {
+            if (isSmallScreen) {
+                // On small screens: hide on scroll down, show on scroll up
+                if (currentScrollY > lastScrollY) {
+                    // Scrolling down
+                    scrollToTopButton?.classList.remove("visible");
+                } else {
+                    // Scrolling up
+                    scrollToTopButton?.classList.add("visible");
+                }
+            } else {
+                // On large screens: always show if scrolled past 300px
+                scrollToTopButton?.classList.add("visible");
+            }
         } else {
+            // Always hide if near top
             scrollToTopButton?.classList.remove("visible");
         }
+
+        lastScrollY = currentScrollY;
     }
 
     function scrollToTop() {
