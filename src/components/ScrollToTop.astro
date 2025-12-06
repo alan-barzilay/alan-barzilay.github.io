@@ -7,9 +7,9 @@ import ChevronDown from "../images/SVGs/chevron-down.svg";
     id="scroll-to-top"
     aria-label="Scroll to top"
     title="Back to top"
-    class="fixed bottom-8 right-8 z-50
+    class="fixed bottom-8 right-8 z-30
         flex h-12 w-12 items-center justify-center
-        rounded-full border-2 border-white/20
+        rounded-full border-2 border-white/20 bg-dark-grey
         text-white cursor-pointer
         transition-all duration-300 ease-in-out
         
@@ -32,10 +32,12 @@ import ChevronDown from "../images/SVGs/chevron-down.svg";
     const scrollToTopButton = document.getElementById("scroll-to-top");
 
     let lastScrollY = window.scrollY;
+    let ticking = false;
+    const mediaQuery = window.matchMedia("(max-width: 600px)");
 
-    function handleScroll() {
+    function update() {
         const currentScrollY = window.scrollY;
-        const isSmallScreen = window.matchMedia("(max-width: 768px)").matches; // md breakpoint
+        const isSmallScreen = mediaQuery.matches;
 
         // Basic visibility check based on scroll position
         if (currentScrollY > 300) {
@@ -58,6 +60,14 @@ import ChevronDown from "../images/SVGs/chevron-down.svg";
         }
 
         lastScrollY = currentScrollY;
+        ticking = false;
+    }
+
+    function onScroll() {
+        if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+        }
     }
 
     function scrollToTop() {
@@ -67,9 +77,9 @@ import ChevronDown from "../images/SVGs/chevron-down.svg";
         });
     }
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", onScroll);
     scrollToTopButton?.addEventListener("click", scrollToTop);
 
-    // Check on load in case the user refreshes halfway down the page
-    handleScroll();
+    // Check on load
+    update();
 </script>
