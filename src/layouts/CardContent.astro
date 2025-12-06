@@ -15,10 +15,14 @@ const formattedDate = date.toLocaleDateString("pt-BR");
   flex flex-col justify-left gap-x-6 gap-y-6
   px-3 md:pl-10 md:pr-14 w-full font-mono"
 >
+  <!-- .size-52 {
+    width: calc(var(--spacing) * 52) /* 13rem = 208px */;
+    height: calc(var(--spacing) * 52) /* 13rem = 208px */;
+} -->
   <Image
     class="read-order-2 order-2 md:order-1 md:row-span-2 m-auto min-w-52 size-52 bg-dark-grey p-4 shadow-md shadow-black/25"
     src={img_src || defaultThumbnail}
-    alt={alt_text || "Thumbnail"}
+    alt={alt_text || "Post Thumbnail"}
     width={208}
     height={208}
   />
