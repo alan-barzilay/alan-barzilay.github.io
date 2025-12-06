@@ -1,0 +1,80 @@
+---
+title: "A primer on LLMs (in 2024)"
+date: 2025-05-12
+tags: ["publication","NLP","ML","LLM"]
+img_src: "../images/thumbnails/nexo.png"
+alt_text: "Logo for the brazilian journal Nexo"
+paragrafo: "I wrote an article in collaboration with the Brazil LAB at Princeton University, later published in a Brazilian newspaper, explaining how chatGPT and other Large Language Models work and their societal impacts."
+---
+
+A bit over a year ago I had the opportunity to write with two colleagues a 20-page article on LLMs,
+going from what they are and how they are built to some of their impacts in society and current trends.
+
+Looking back a year later, it's interesting to see how fast things changed (shortly after publication, deep-seek was released) and how some of our talking points became more mainstream. 
+Even an year later I feel like it still holds up pretty well, sure there have been some breakthroughs and interesting developments like chain-of-thought models but our main points still stand and as a piece of science outreach there was never a need to get that technical,
+the underlying technology hasn't really had a dramatic change.
+
+Being published in a Brazilian journal, the article is in Portuguese only so I was dreading the idea of having to translate everything to English.
+However Thiago, my co-author, already did a lot of the heavy lifting [translating and summarizing five of the twelve points we addresed](https://www.linkedin.com/in/thiagotvarella/recent-activity/all/), so I will just take the lazy way out and copy his words[^s2thi].
+Nevertheless, most of our over 70 citations are in english and go into more detail than we were allowed in our already huge article so I highly recommend browsing them if you are interested in the subject.
+
+[^s2thi]:Thanks Thi, love you.
+
+If you would like to [**see the original article, click here**](https://pp.nexojornal.com.br/perguntas-que-a-ciencia-ja-respondeu/2024/06/28/grandes-modelos-de-linguagem-em-12-pontos).
+
+
+## Summary
+
+## 1. How did language become a problem in computer science?
+>In summary, modeling language systematically is not at all new. For instance, Aristotle introduced the idea of formal and logical systems, in which a sentence implied another. A few thousand years later, in the mid 20th century, Shannon introduced the idea of estimating the following word based on how frequently another word follows the first, creating the first statistical language model.
+>
+>These models inspired the field of Natural Language Processing (NLP) and were widely used in the last decades for spam filtering or the fateful early autocorrects! When deep neural networks were inserted into the mix, well, the rest is history. 
+>
+
+
+##  2. How do words become numbers?
+>Words are already naturally converted to numbers (bits) when we process them in a computer. The problem is: bits are too flexible. Why should I spend more compute with the word “people” than with the word “wub” (if that can even be called a word)? The solution is what we call embeddings.
+>
+>First we tokenize words, i.e., we break them into parts that are more common. Then, we attribute values to each combination of tokens (i.e. word) in a way that words in the same context will have similar values. Surprisingly, from that process there are emergent properties such as creating mathematical relationships between the words, the standard example being “king - man + woman ≈ queen“.
+>
+
+
+## 3. How are LLMs built?
+>Most high profile LLMs go through 3 stages of training: pre-training of a base neural network, fine-tuning for a specific task, and reinforcement learning from human feedback (RLHF). In that first stage, the neural network is just being trained to predict the next word in an extremely large dataset - large enough that a human would take thousands (maybe millions) of years nonstop to read through. The neural network used for LLMs can be very different from each other, although the most common architecture currently used is the transformers architecture. The important thing about that architecture is that not only the network learns to predict the next word but also what previous words in the sentence are useful to make that prediction.
+>
+>The following step is the fine-tuning. In that step, the network goes through a similar training process, but instead of being trained on the largest dataset possible, it is trained on a specific task, such as being a chatbot. After this step, the answers will not feel like just continuing a previous statement, but rather feel like an answer to the previous statement, even when that statement is not really a question. This behavior is solidified further in the final stage, RLHF, in which humans have to rate answers in terms of how aligned the answers are to what the researchers are expecting. For example: is the answer creating new information? Is it disseminating violent or harmful content?
+>
+>All of these steps have been thoroughly discussed and illustrated before, and newer architectures are being developed, but the core of the biggest models to which we have information are, for now, still as outlined here. 
+>
+
+
+
+## 4. Do LLMs learn like we do?
+>The training process of an LLM is also referred to as learning, but it differs significantly from human learning - if anything, the implementation is completely different. There are some similarities, but even these can be tricky to parse. For example, both processes are strongly influenced by pattern recognition, and in both cases, this is referred to as “statistical learning”. However, humans are creating associations between words and concepts, by making use of a multitude of sensory experiences. Machines, however, are finding patterns in the connection of meaningless parts of words (the tokens), mostly without an easily retrievable concept underlying it.
+>
+>It is worth considering the difference in the social aspect as well. Humans usually learn words in order of the complexity of the concept. Furthermore, the concepts are associated with subjective experiences, like associating dogs with the experience of something good (or bad). LLMs lack any component representing experiences or increasing complexity throughout the learning process.
+>
+>One could argue still that it doesn’t matter that LLMs do not learn like we do as long as they are indistinguishable in terms of what words are produced, which brings me to the question I’ll approach in my next post: Do LLMs speak like we do? 
+>
+
+
+## 5. Do LLMs speak like we do? 
+> We saw at the last question that words are not just symbolic (e.g. represented by letters) but they also carry meaning and interact with our senses. This observation is evident when we consider slips of the tongue. For example, there’s a wordplay in which we prime the responder to think of a series of white things, like clouds and snow, and lead them to the punchline where they mistakenly say a cow drinks milk instead of water.
+>
+> This mistake happens because of associations that we created between the concept of the color white, the animal cow, and the word milk. It’s an interesting example because it is one mistake that LLMs do not produce. On the other hand, LLMs produce other mistakes, such as being unable to count letters ‘a’ in a paragraph. Therefore, even though there are similarities in the production of speech, such as the correct use of grammatical structures, the fact that humans and LLMs make different mistakes are evidence that speech is produced in different ways.
+> We know that LLMs do not learn like we do, and they do not produce speech like we do. 
+>
+
+
+## Questions 6 - 12
+
+Oops, I still need to translate those, sorry about that.
+In the meantime, here are the question topics:
+
+6. To produce text is to understand language?
+7. Can you trust LLMs?
+8. What are the societal and environmental implications of LLMs infrastructure?
+9. Who owns LLMs?
+10. What language does a LLM speak?
+11. What are the economical impacts of LLMs?
+12. How to regulate LLMs?
