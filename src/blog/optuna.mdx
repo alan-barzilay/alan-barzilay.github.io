@@ -2,7 +2,7 @@
 title: "Optuna samplers, why and how"
 date: "07/12/2025"
 tags: ["ML", "slides"]
-img_src: ""
+img_src: "../images/thumbnails/optuna.png"
 alt_text: "Abstract art illustration"
 paragrafo: "In my latest hyper-fixation I learned something useful for a change, I got kind of obsessed with how the fuck samplers are chosen and what is the state of the art in hyperparameter optimization and why does it look so much like cooking and everything wrong with sicence."
 ---
@@ -43,10 +43,10 @@ I took a look at all implemented samplers in Optuna as well as some SotA sampler
 It took me a long time to compile all this information so I hope it can be usefull for others embarking on this journey.
 Optuna's default are pretty robust and in many cases it is impossible to determine what sampler is best without testing them out, but that is not to say that there is no room for improvement.
 The own Optuna team has publications achieving better performance with simple changes (that interestingly enough have not been implemented as the new defaults even years later their publication).
-My new rule of thumb is simple, be sure you are using pruners to the best of their capability by reporting intermediary performance of models and pick the new [Optuna Autosampler]() to get a great step up from the default with little to no extra work.
+My new rule of thumb is simple, be sure you are using pruners to the best of their capability by reporting intermediary performance of models and pick the new [Optuna Autosampler](https://hub.optuna.org/samplers/auto_sampler/) to get a great step up from the default with little to no extra work.
 
 
 For more details on each sampler, how they work and their respective strenghts and weaknesess please refer to my slides below (or [click here to go see them as a full page]())
 
-[^crisisml]:
+[^crisisml]: [Leakage and the Reproducibility Crisis in ML-based Science](https://reproducible.cs.princeton.edu/) - by Princeton University
 

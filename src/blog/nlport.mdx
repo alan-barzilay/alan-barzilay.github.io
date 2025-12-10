@@ -1,26 +1,28 @@
 ---
-title: "Creating an official Coursera course"
+title: "Creating a Coursera course"
 date: "10/12/2025"
-tags: ["NLP","ML"]
-img_src: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop"
-alt_text: "Logo for my nlp course, which reads NLPortugues"
+tags: ["NLP","ML", "slides", "webdesign"]
+img_src: "../images/thumbnails/coursera_logo.png"
+alt_text: "Coursera logo"
 paragrafo: "During the pandemic I partnered with my university, Google and Coursera to create a graduate level NLP course in portuguese for the lusophone community "
 ---
+import { Image } from 'astro:assets';
+import nlportLogo from "../images/posts_imgs/nlport_logo.png"
 
 
-[If you want to take a look at the course, here is the link.]()
+[If you want to take a look at the course, here is the link.](https://www.coursera.org/learn/processamento-neural-linguagem-natural-em-portugues-i)
 
-(🇧🇷 only) [If you would like to see the course website and materials, click here]() (I'm pretty proud of how the slides turned out).
+[If you would like to see the course website and materials, click here](https://nlportugues.ime.usp.br/) 
 
 ## The MOOC
 
 The pandemic wasn't a fun time. I know, very brave of me to say that. 
-But besides the usual life-threatning issues we all had to deal with, I had to find a way to keep classes going since I was a Teaching Assistant (T.A.) for a NLP course my supervisor, Marcelo Finger, was minestering.
+But besides the usual life-threatening issues we all had to deal with, I had to find a way to keep classes going since I was a Teaching Assistant (T.A.) for a NLP course my supervisor, Marcelo Finger, was ministering.
 
 So besides creating the slides, course material, cronogram, lessons, lists and assignments; I also had to make everything work remotely. How fun.
 However after the initial confusion classes resumed more or less as normal via Discord. 
-Since all assignments and exams had been created with this remote model in mind, the hardware requirements where pretty modest. 
-Running locally should not be hard even on a decade old machine and most lessons could be done directly on Goggle Colab to leverage the free GPU instances.
+Since all assignments and exams had been created with this remote model in mind, the hardware requirements were pretty modest. 
+Running locally should not be hard even on a decade old machine and most lessons could be done directly on Google Colab to leverage the free GPU instances.
 
 So, at the end of the semester with all this material battle tested by a class of graduate students, I approached my supervisor about converting everything into a MOOC and
 since our university already had a partnership with Coursera it was the obvious option.
@@ -30,32 +32,40 @@ As I quickly learned, this was easier said than done and it took quite some time
 It took so long that all my recordings had to be done from the Netherlands during my exchange with TUDelf at the tail-end of the pandemic.
 After creating my own course I now recognize that I never really valued how much work goes into making one of this[^rant].
 It takes a lot of time, people and money. 
-On that note, the original course that served as a base for this MOOC was only made possible thanks to the "prmeio" grant. 
+On that note, the original course that served as a base for this MOOC was only made possible thanks to the "Faculty Awards to Support Machine Learning Courses, Diversity, and Inclusion at Universities" grant from Google AI. 
 Who knew applying for random grants you found online really works? That was a welcome surprise, thanks Google!
 
-[^rant]:Not in small measure because of how awfull are the tools made available by coursera, even writting simple accented words like n~ao was hard.
-But lets keep this rant for another day.  
+[^rant]:Not in small measure because of how awful are the tools made available by Coursera, but let's keep this rant for another day.  
 
-## the website
 
-"""image logo curso"
+
+
+## The website
+
+
 
 We wanted to have our own website for the course so we could host and share the course materials more easily (e.g. Coursera has limitations on what files you can serve and how).
 I promised my supervisor I would do it but the thing is I had never done any frontend development before.
-During the development of this website I developed a new software development approach I like to call fever-oriented design.
+
+<Image src={nlportLogo} alt="NLPortuguês Logo" width={300} />
+
+
+During the development of this website I developed a new software development paradigm I like to call fever-oriented design.
 This revolutionary approach is pretty simple to implement in practice:
+
 1. get covid
-2. get a 40C fever
+2. get a 40°C fever 
 3. watch a few of those awful 27 hour "how to make a website! all you will ever need to know about css js and html! success guaranteed!" videos on youtube
-4. make your website in framer
+4. make your website in Framer
 5. find out there is no free export to code option
-6. make your website in figma
+6. make your website in Figma
 7. find out there is no free export to code option
-8. make everything from scratch with no framework, just the power of tylenol to keep you barely alive
+8. make everything from scratch with no framework, just the power of tylenol to keep you barely conscious
 
 
-Considering it was my first attempt at webdesign and that I was had a burning fever most of the time, I'm pretty happy with how it turned out.
-I would go so far as to say it is kidn pretty! Oh, there is also all the slides I made with reveal.js that make for a seemless navigation experience.
+Considering it was my first attempt at webdesign and that I had a burning fever most of the time, I'm pretty happy with how it turned out.
+I would go so far as to say it is kinda pretty! Oh, there are also all the slides I made with reveal.js that make for a seamless navigation experience.
+
 
 
 

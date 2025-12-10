@@ -2,20 +2,24 @@
 title: "Making an interactive cemetery map from scratch, for reasons"
 date: "06/12/2025"
 tags: ["webdesign"]
+img_src: "../images/thumbnails/cemetery.png"
 alt_text: "Water colored tombstone illustration"
 paragrafo: "I get roped into doing the weirdest shit"
 ---
+import { Image } from 'astro:assets';
+import git from "../images/posts_imgs/git_balaciano_death.jpg"
+import mapa from "../images/posts_imgs/cemetery_map.png"
 
-img_src: "../images/thumbnails/cemetery.png"
+
 
 
 This is a short one, most of it is already on the title.
 Around 2022 I was approached to make a website for an abandoned jewish cemetery in Sidon Lebanon, as part of a revitalization project to preserve its history and document its once vibrant community.
-Having done exactly 01 static website in my life I originally declined as I felt I wasn't up to the task but their current website was such a broken wordpress mess that I decided to give it a shot.
+[Having done exactly 01 static website in my life](nlport) I originally declined as I felt I wasn't up to the task but their current website was such a broken wordpress mess that I decided to give it a shot.
 
-[Link to the website]()
+[Link to the website](https://nabisaydoun.org/)
 
-[Link to the super cool interactive map that you need to see for yourself and I guess there is also a neat table at the]()
+[Link to the super cool interactive map that you need to see for yourself and I guess there is also a neat table at the](https://nabisaydoun.org/cemetery/)
 
 ## The stack
 
@@ -64,17 +68,20 @@ Great, everything done, right? No, because I'm an idiot that made everything wor
 And turns out that in my infinite wisdom I had overwritten the original and had to recreate everything from scratch for the fourth time. 
 Fantastic. Eventually everything worked out and the map became really compact and responsive, but I had to take some time off from working on this project and quell my new found hate towards SVGs.
 
+[Click here to look at the final version!](https://nabisaydoun.org/cemetery/)
+
 
 ## Internationalization (i18n) and  right to left languages
 
 An interesting challenge was the i18n of the website, I had never written a multi-lingual website and at the time astro didn't have support for it so I had to learn a lot to make things work. 
-The most interesting part must be adding arab support, I had to re-write most of my css since its right to left nature broke a lot of stuff (including my [map]()). 
+The most interesting part must be adding arab support, I had to re-write most of my css since its right to left nature broke a lot of stuff ([including my map](https://github.com/alan-barzilay/sidon/issues/1)). 
 Once I learned there are css properties for start and end instead of left and right, things went smoothly (I'm not a front-end dev, I give myself a pass for not knowing this one).
 
-
+Sadly, I never got the finished arab translation, so for now the uncomplete arab version is not deployed.
 
 ------------
 
 
-I dont know how to end this post, so here is a weird commit out of context from when I was cross-referencing different tables and documents to validate the tombs data
+I dont know how to end this post, so here is a weird commit.
 
+<Image src={git} alt="A Github screenshot of a commit that reads 'fix death date Balaciano' "  />
