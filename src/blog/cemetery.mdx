@@ -1,5 +1,5 @@
 ---
-title: "Making an interactive cemetery map from scratch, for reasons"
+title: "Making an interactive map for an abandoned cemetery, for reasons"
 date: "06/12/2025"
 tags: ["webdesign"]
 img_src: "../images/thumbnails/cemetery.png"
@@ -8,14 +8,14 @@ paragrafo: "I get roped into doing the weirdest shit"
 ---
 import { Image } from 'astro:assets';
 import git from "../images/posts_imgs/git_balaciano_death.jpg"
-import mapa from "../images/posts_imgs/cemetery_map.png"
+import map from "../images/posts_imgs/cemetery_map.png"
 
 
 
 
 This is a short one, most of it is already on the title.
 Around 2022 I was approached to make a website for an abandoned jewish cemetery in Sidon Lebanon, as part of a revitalization project to preserve its history and document its once vibrant community.
-[Having done exactly 01 static website in my life](nlport) I originally declined as I felt I wasn't up to the task but their current website was such a broken wordpress mess that I decided to give it a shot.
+[Having done exactly 01 static website in my life](nlport) I originally declined as I felt I wasn't up to the task but the website they had was such a broken wordpress mess that I decided to give it a shot.
 
 [Link to the website](https://nabisaydoun.org/)
 
@@ -49,10 +49,10 @@ Eventually I found an old CAD map of the cemitery, it was burried in the website
 However, it wasn't really a CAD file, it was a jpeg of a printscreen of what once, I think, was a CAD file. 
 Sadly, the author[^shoutout] of this map had passed away so there was no way of recovering the original, that screenshot was everything I had to work with. 
 
-[^shoutout]: 
+[^shoutout]: Shout out to Nagi for everything he has done for this project, wish I could have met him.
 
 
-((((imagem cad aqui))))
+<Image src={map} alt="A map of the cemetery, probably a screenshot of a CAD file"  />
 
 I began the extremelly slow and annoying process of converting the screenshot into an usable SVG.
 Inkscape has some auto-tracing features that helped but we are talking about hundred of tombs that needed to gain an individual id to be targeted by the js library that would than create the pop-up caroussel with the tomb images.
