@@ -1,0 +1,52 @@
+---
+title: "Optuna samplers, why and how"
+date: "07/12/2025"
+tags: ["ML", "slides"]
+img_src: ""
+alt_text: "Abstract art illustration"
+paragrafo: "In my latest hyper-fixation I learned something useful for a change, I got kind of obsessed with how the fuck samplers are chosen and what is the state of the art in hyperparameter optimization and why does it look so much like cooking and everything wrong with sicence."
+---
+
+
+I have been using Optuna for quite a few years now but I never really messed too much with it's default options.
+What I like about Optuna is that it takes out a lot of the black magic involved in building a machine learning model and makes things more objective. 
+Why did we pick this learning rate? Why not use this annealing approach? What about this other architecture?
+That is, if we even know what hyper parameters were used in the first place and not just randomly guessing them, a pain many undergraduate students have felt while trying to replicate some shitty paper that claims SotA performance[^crisisml].
+
+The ideal solution is simple, test all of your options and pick the best one (if it isn't an overfitted mess, but that's a topic for another day).
+However, this is more easily said than done: maybe you dont have time to test everything out, maybe there is not time to test everything out before the heat death of the universe, maybe you are just interested in good enough, maybe you dont want to pay the AWS bill for such an exaustive approach.
+Whatever is your reason, having an efficient way to choose a good set of hyperparameters is extremelly important, and Optuna gives us just that.
+
+When working with Optuna you define a search space for your hyperparameters and an objective function to optimize. Thats pretty much it, optuna will do the rest for you. 
+It will explore the search space in an efficient manner and converge into a good set of hyperparameters. Simple, great.
+
+However, there is a lot of complexity hidden under the hood, things can quickly get confusing once you start to tinker with the available options. 
+You can change pruners, samplers, terminators, have multiple objective functions, conditional search spaces, constrained search spaces, distribute its training across multiple machines, or extend it with custom logic for whatever cursed personal use case you have.
+
+Deciding any one of those things can lead to having to decide a number of other things, e.g. samplers have parameters of their own. 
+But wait a second, we wanted to delegate the hyperparameter choice to Optuna but now we have to pick a sampler and its parameters together with a bunch of other options?
+We simply **moved the complexity from the objective function to the sampler**, we are still stuck in the data science kitchen cooking our models directed by taste and gut feeling.
+
+Well, I kinda hate that. I started using optuna because I couldn't stomach the vibes approach to hyperparameter selection I saw so often, 
+so this realization brought me down a rabbit hole of way to many baddly written SotA papers and medium blog posts, while trying to dissect Optuna and all its assumptions.
+
+
+This is not to say that Optuna is bad and that you will get garbage results, their defaults are really robust and hand crafted by some of the foremost experts in the field. 
+Sure, if you hand-tune your samplers and pruners you may get a better performance, but at some point you get diminishing returns and the defaults gets you pretty solid results.
+Aditionally, you have a trade-off between final performance and budget allocated to exploration (be it in number of trials, time or compute).
+You are just pottentially leaving some performance on the table.
+
+So, is it worth it going through all the trouble of messing with the defaults? Well, that depends on your use case but I would argue that yes, in many cases it could be worth it. 
+The problem is that the literature is insanely large and kind of a mess, the barrier of entry is high when you consider how much you need to study, research and experiment on your own.
+
+I took a look at all implemented samplers in Optuna as well as some SotA samplers implemented by the community in OptunaHub and tried to extract their main points, best references and make some comparisons.
+It took me a long time to compile all this information so I hope it can be usefull for others embarking on this journey.
+Optuna's default are pretty robust and in many cases it is impossible to determine what sampler is best without testing them out, but that is not to say that there is no room for improvement.
+The own Optuna team has publications achieving better performance with simple changes (that interestingly enough have not been implemented as the new defaults even years later their publication).
+My new rule of thumb is simple, be sure you are using pruners to the best of their capability by reporting intermediary performance of models and pick the new [Optuna Autosampler]() to get a great step up from the default with little to no extra work.
+
+
+For more details on each sampler, how they work and their respective strenghts and weaknesess please refer to my slides below (or [click here to go see them as a full page]())
+
+[^crisisml]:
+
