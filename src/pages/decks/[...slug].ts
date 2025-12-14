@@ -20,6 +20,13 @@ export const GET: APIRoute = async ({ params }) => {
   try {
     let html = await fs.readFile(filePath, 'utf-8');
 
+    // Fix image paths: rewrite relative paths like "optuna/image.png" to "/slides/optuna/image.png"
+    // This handles both data-src and src attributes with single or double quotes
+    html = html.replace(
+      new RegExp(`(data-src|src)=(["'])${slug}/`, 'g'),
+      `$1=$2/slides/${slug}/`
+    );
+
     // We use html::before for the background and html::after for the spinner
     // This allows us to hide the underlying content while keeping the loader visible
     // without needing to inject complex HTML structures into the body.
