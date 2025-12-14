@@ -1,0 +1,80 @@
+---
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+export async function getStaticPaths() {
+  const legacyDir = path.resolve(process.cwd(), 'src', 'slides_raw');
+  const files = await fs.readdir(legacyDir);
+  return files
+    .filter(file => file.endsWith('.html'))
+    .map(file => ({
+      params: { slug: file.replace('.html', '') },
+    }));
+}
+
+const { slug } = Astro.params;
+
+// 1. ASSET MAP
+// Since 'lib' is now inside 'slides_raw', a single glob covers EVERYTHING.
+// This finds: src/slides_raw/lib/style.css AND src/slides_raw/foobar/image.png
+const assetMap = import.meta.glob(
+  [
+    '/src/slides_raw/**/*',       
+    '!/src/slides_raw/**/*.html'  
+  ], 
+  { query: '?url', eager: true, import: 'default' }
+);
+
+// 2. Load HTML
+const filePath = path.resolve(process.cwd(), 'src', 'slides_raw', `${slug}.html`);
+let html = await fs.readFile(filePath, 'utf-8');
+
+// 3. REPLACER LOGIC
+html = html.replace(
+  /(src|href|data-src)=["']([^"']+)["']/g, 
+  (match, attr, rawPath) => {
+    
+    // Ignore external links
+    if (rawPath.startsWith('http') || rawPath.startsWith('#') || rawPath.startsWith('//')) {
+      return match;
+    }
+
+    // Clean the path (remove leading './' if present)
+    const cleanPath = rawPath.replace(/^\.\//, '');
+
+    // 4. UNIFIED LOOKUP
+    // Whether it's "lib/style.css" or "foobar/image.png", 
+    // it simply lives inside "src/slides_raw/" now.
+    const lookupKey = `/src/slides_raw/${cleanPath}`;
+
+    // Replace with the optimized Astro path if found
+    if (assetMap[lookupKey]) {
+      return `${attr}="${assetMap[lookupKey]}"`;
+    }
+
+    // Optional: Log missing assets to help debug
+    // console.warn(`Asset not found: ${lookupKey}`);
+
+    return match;
+  }
+);
+
+// 5. Inject Overlay (Standard)
+const fixScript = `
+  <style>
+    html::before { content: ""; position: fixed; inset: 0; background-color: #1a1a1a; z-index: 990; transition: opacity 0.4s ease, visibility 0.4s; }
+    html::after { content: ""; position: fixed; top: 50%; left: 50%; width: 48px; height: 48px; margin-top: -24px; margin-left: -24px; border: 4px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; z-index: 999; animation: spin 1s linear infinite; transition: opacity 0.4s ease, visibility 0.4s; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    html.ready::before, html.ready::after { opacity: 0; visibility: hidden; pointer-events: none; }
+  </style>
+  <script>
+    function showContent() { document.documentElement.classList.add('ready'); }
+    window.addEventListener('load', showContent);
+    setTimeout(showContent, 3000);
+  </script>
+`;
+
+html = html.replace('</head>', fixScript);
+---
+
+<Fragment set:html={html} />
