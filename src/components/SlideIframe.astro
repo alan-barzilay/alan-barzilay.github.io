@@ -1,0 +1,17 @@
+---
+interface Props {
+  src: string;
+  title?: string;
+}
+
+const { src, title = "Slide presentation" } = Astro.props;
+---
+
+<div class="bg-dark-grey w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] flex justify-center">
+  <iframe
+    title={title}
+    src={src}
+    class="w-[80vw] h-[80dvh]">
+  </iframe>
+</div>
+
