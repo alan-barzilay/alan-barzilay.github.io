@@ -22,7 +22,15 @@ export default defineConfig({
   integrations: [sitemap(), mdx()],
 
   vite: {
-    plugins: [tailwindcss(), visualizer()]
+    plugins: [tailwindcss(), visualizer()],
+    assetsInclude: [ 
+      // Need this because of extensionless slide images
+      // \/src\/slides_raw\/  -> Look inside src/slides_raw
+      // [^/]+                -> Inside any subfolder (e.g. optuna)
+      // \/                   -> Path separator
+      // [^/.]+$              -> A filename that contains NO DOTS (no extension)
+      /\/src\/slides_raw\/[^/]+\/[^/.]+$/ 
+    ],
   },
   markdown: {
     remarkPlugins: [remarkReadingTime, remarkMath, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
