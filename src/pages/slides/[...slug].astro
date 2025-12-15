@@ -1,0 +1,102 @@
+---
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+
+// To deal with FOUC
+const LOADING_OVERLAY_SNIPPET = `
+  <style>
+    html::before { content: ""; position: fixed; inset: 0; background-color: #1a1a1a; z-index: 990; transition: opacity 0.4s ease, visibility 0.4s; }
+    html::after { content: ""; position: fixed; top: 50%; left: 50%; width: 48px; height: 48px; margin-top: -24px; margin-left: -24px; border: 4px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; z-index: 999; animation: spin 1s linear infinite; transition: opacity 0.4s ease, visibility 0.4s; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    html.ready::before, html.ready::after { opacity: 0; visibility: hidden; pointer-events: none; }
+  </style>
+  <script>
+    function showContent() { document.documentElement.classList.add('ready'); }
+    window.addEventListener('load', showContent);
+    setTimeout(showContent, 3000);
+  </script>
+`;
+
+const FAVICON_SNIPPET = `
+  <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon/favicon.ico" />
+`;
+
+// import.meta.glob must be top-level and cannot be inside a function.
+const assetMap = import.meta.glob(
+  ['/src/slides_raw/**/*', '!/src/slides_raw/**/*.html'], 
+  { query: '?url', eager: true, import: 'default' }
+);
+
+
+// ================
+//  getStaticPaths 
+// ================
+export async function getStaticPaths() {
+  const legacyDir = path.resolve(process.cwd(), 'src/slides_raw');
+  const files = await fs.readdir(legacyDir);
+  
+  return files
+    .filter(file => file.endsWith('.html'))
+    .map(file => ({
+      params: { slug: file.replace('.html', '') },
+    }));
+}
+
+// =========
+// FUNCTIONS 
+// =========
+async function loadRawHtml(slug: string): Promise<string> {
+  const filePath = path.resolve(process.cwd(), 'src/slides_raw', `${slug}.html`);
+  return await fs.readFile(filePath, 'utf-8');
+}
+
+//Replaces src/href attributes in the HTML with the hashed Astro asset paths.
+function replaceAssetPaths(htmlContent: string, assets: Record<string, string>): string {
+  return htmlContent.replace(
+    /(src|href|data-src)=["']([^"']+)["']/g, 
+    (match, attr, rawPath) => {
+      // ignore external links or anchors
+      if (rawPath.startsWith('http') || rawPath.startsWith('#') || rawPath.startsWith('//')) {
+        return match;
+      }
+
+      // clean the path (normalize ./ relative paths)
+      const cleanPath = rawPath.replace(/^\.\//, '');
+
+      // construct the lookup key (must match the Glob pattern)
+      const lookupKey = `/src/slides_raw/${cleanPath}`;
+
+      // return new path if found, otherwise return original match
+      if (assets[lookupKey]) {
+        return `${attr}="${assets[lookupKey]}"`;
+      }
+      
+      return match;
+    }
+  );
+}
+
+
+function injectIntoHead(htmlContent: string, snippets: string[]): string {
+  const combinedSnippets = snippets.join('\n');
+  return htmlContent.replace('</head>', `${combinedSnippets}\n</head>`);
+}
+
+// ========
+//   MAIN 
+// ========
+const { slug } = Astro.params;
+
+let html = await loadRawHtml(slug as string);
+html = replaceAssetPaths(html, assetMap as Record<string, string>);
+html = injectIntoHead(html, [
+  FAVICON_SNIPPET,
+  LOADING_OVERLAY_SNIPPET
+]);
+
+---
+
+<Fragment set:html={html} />
