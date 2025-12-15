@@ -12,9 +12,14 @@ const LOADING_OVERLAY_SNIPPET = `
     html.ready::before, html.ready::after { opacity: 0; visibility: hidden; pointer-events: none; }
   </style>
   <script>
-    function showContent() { document.documentElement.classList.add('ready'); }
-    window.addEventListener('load', showContent);
-    setTimeout(showContent, 3000);
+    function showContent() { 
+      document.documentElement.classList.add('ready'); 
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showContent);
+    } else {
+        showContent();
+    }
   </script>
 `;
 
