@@ -1,7 +1,6 @@
 ---
-import fs from 'node:fs/promises';
-import path from 'node:path';
-
+import fs from "node:fs/promises";
+import path from "node:path";
 
 // To deal with FOUC
 const LOADING_OVERLAY_SNIPPET = `
@@ -31,77 +30,83 @@ const FAVICON_SNIPPET = `
 
 // import.meta.glob must be top-level and cannot be inside a function.
 const assetMap = import.meta.glob(
-  ['/src/slides_raw/**/*', '!/src/slides_raw/**/*.html'], 
-  { query: '?url', eager: true, import: 'default' }
+  ["/src/raw_slides/**/*", "!/src/raw_slides/**/*.html"],
+  { query: "?url", eager: true, import: "default" },
 );
 
-
 // ================
-//  getStaticPaths 
+//  getStaticPaths
 // ================
 export async function getStaticPaths() {
-  const legacyDir = path.resolve(process.cwd(), 'src/slides_raw');
+  const legacyDir = path.resolve(process.cwd(), "src/raw_slides");
   const files = await fs.readdir(legacyDir);
-  
+
   return files
-    .filter(file => file.endsWith('.html'))
-    .map(file => ({
-      params: { slug: file.replace('.html', '') },
+    .filter((file) => file.endsWith(".html"))
+    .map((file) => ({
+      params: { slug: file.replace(".html", "") },
     }));
 }
 
 // =========
-// FUNCTIONS 
+// FUNCTIONS
 // =========
 async function loadRawHtml(slug: string): Promise<string> {
-  const filePath = path.resolve(process.cwd(), 'src/slides_raw', `${slug}.html`);
-  return await fs.readFile(filePath, 'utf-8');
+  const filePath = path.resolve(
+    process.cwd(),
+    "src/raw_slides",
+    `${slug}.html`,
+  );
+  return await fs.readFile(filePath, "utf-8");
 }
 
 //Replaces src/href attributes in the HTML with the hashed Astro asset paths.
-function replaceAssetPaths(htmlContent: string, assets: Record<string, string>): string {
+function replaceAssetPaths(
+  htmlContent: string,
+  assets: Record<string, string>,
+): string {
   return htmlContent.replace(
-    /(src|href|data-src|data-background-image|data-background-video)=["']([^"']+)["']/g, 
-        (match, attr, rawPath) => {
-          // ignore external links, anchors, or data-uris
-          if (rawPath.startsWith('http') || rawPath.startsWith('#') || rawPath.startsWith('//') || rawPath.startsWith('data:')) {
-            return match;
-          }
+    /(src|href|data-src|data-background-image|data-background-video)=["']([^"']+)["']/g,
+    (match, attr, rawPath) => {
+      // ignore external links, anchors, or data-uris
+      if (
+        rawPath.startsWith("http") ||
+        rawPath.startsWith("#") ||
+        rawPath.startsWith("//") ||
+        rawPath.startsWith("data:")
+      ) {
+        return match;
+      }
 
       // clean the path (normalize ./ relative paths)
-      const cleanPath = rawPath.replace(/^\.\//, '');
+      const cleanPath = rawPath.replace(/^\.\//, "");
 
       // construct the lookup key (must match the Glob pattern)
-      const lookupKey = `/src/slides_raw/${cleanPath}`;
+      const lookupKey = `/src/raw_slides/${cleanPath}`;
 
       // return new path if found, otherwise return original match
       if (assets[lookupKey]) {
         return `${attr}="${assets[lookupKey]}"`;
       }
-      // console.log(`[Asset Warning] Could not find asset key: ${lookupKey}`); // for debugging     
+      // console.log(`[Asset Warning] Could not find asset key: ${lookupKey}`); // for debugging
       return match;
-    }
+    },
   );
 }
 
-
 function injectIntoHead(htmlContent: string, snippets: string[]): string {
-  const combinedSnippets = snippets.join('\n');
-  return htmlContent.replace('</head>', `${combinedSnippets}\n</head>`);
+  const combinedSnippets = snippets.join("\n");
+  return htmlContent.replace("</head>", `${combinedSnippets}\n</head>`);
 }
 
 // ========
-//   MAIN 
+//   MAIN
 // ========
 const { slug } = Astro.params;
 
 let html = await loadRawHtml(slug as string);
 html = replaceAssetPaths(html, assetMap as Record<string, string>);
-html = injectIntoHead(html, [
-  FAVICON_SNIPPET,
-  LOADING_OVERLAY_SNIPPET
-]);
-
+html = injectIntoHead(html, [FAVICON_SNIPPET, LOADING_OVERLAY_SNIPPET]);
 ---
 
 <Fragment set:html={html} />
