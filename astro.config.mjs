@@ -23,13 +23,13 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss(), visualizer()],
-    assetsInclude: [ 
+    assetsInclude: [
       // Need this because of extensionless slide images
-      // \/src\/slides_raw\/  -> Look inside src/slides_raw
+      // \/src\/raw_slides\/  -> Look inside src/raw_slides
       // [^/]+                -> Inside any subfolder (e.g. optuna)
       // \/                   -> Path separator
       // [^/.]+$              -> A filename that contains NO DOTS (no extension)
-      /\/src\/slides_raw\/[^/]+\/[^/.]+$/ 
+      /\/src\/raw_slides\/[^/]+\/[^/.]+$/
     ],
   },
   markdown: {
