@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @plugin '@tailwindcss/typography';
 
-/* experimental utilities for a11y */
+/* chrome experimental utilities for a11y */
 @utility read-order-0 {
   reading-order: 0;
 }
@@ -25,16 +25,15 @@
 @theme {
   --breakpoint-xs: 475px;
 
-
   --color-copper: #b87333;
-
   --color-trace-green: #2e7b50;
   --color-pcb-green: #1c2e24;
+  /* 1c2e24 nao-ativo hsl(146.67, 24.32%, 14.51%)  */
   --color-pcb-green-hover: #1f3328;
+  /* 1f3328 hover     hsl(147, 24.39%, 16.08%) */
   --color-pcb-ring: #365a46;
 
   --color-dark-grey: #1a1a1a;
-
   --color-subtext-grey: #9097a2;
 
   --drop-shadow-b: 0 4px 4px rgba(0, 0, 0, 0.25);
@@ -43,8 +42,6 @@
 /* pcbgreen?
 1B2D23 */
 
-/* 1c2e24 nao-ativo hsl(146.67, 24.32%, 14.51%)  */
-/* 1f3328 hover     hsl(147, 24.39%, 16.08%) */
 /* --color-mint-500: oklch(0.72 0.11 178); */
 
 
@@ -53,7 +50,7 @@
 @layer components {
   .anchor-link {
     @apply mx-3 !text-slate-400 opacity-0 transition-opacity duration-200 !no-underline;
-}
+  }
 
   h1:hover .anchor-link,
   h2:hover .anchor-link,
