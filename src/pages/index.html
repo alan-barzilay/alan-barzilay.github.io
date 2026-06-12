@@ -1,715 +1,1913 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-      overflow: hidden;
-      position: relative;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Alan Barzilay — Starfield Test (scroll reveal · 2026-06-09)</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<style>
+:root {
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
 
-    .background {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image: url('/constru.gif');
-      background-repeat: repeat;
-      z-index: -1;
-      pointer-events: none;
-    }
+  --phos: #6fc89a;
+  --phos-bright: #b8f0d0;
+  --phos-dim: #3a7a5a;
+  --crt-bg: #070c0a;
 
-    img {
-      height: 100vh;
-      width: auto;
-      max-width: 60%;
-      object-fit: cover;
-    }
+  --tube-accent: #F4B182;
+  --tube-accent-glow: rgba(244, 177, 130, 0.7);
 
-    h1 {
-      margin-left: 5vw;
-      color: fuchsia;
-      background-color: black;
-      z-index: 1;
-    }
+  /* synthwave / vapor — shared neon palette for Starfox Neon outro */
+  --neon-pink:  #ff2bd6;
+  --neon-cyan:  #00d4ff;
+  --neon-magenta: #c93dff;
+  --deep:      #0a0420;
+  --deep2:     #06031a;
+  --vw-ink:    #f5d8ff;
+}
 
-    /* Ensure oneko cat is visible and doesn't interfere */
-    #oneko {
-      pointer-events: none;
-      z-index: 10000;
-    }
-  </style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: var(--sans);
+  background: #070c0a;
+  color: #fff;
+  overflow-x: hidden;
+}
+html, body { scroll-behavior: auto; }
+body.locked { overflow: hidden; }
+
+::selection { background: #fff; color: #000; }
+
+.scroller { height: 1000vh; }
+
+/* ============================================================
+   LAYER STACK
+   ============================================================ */
+.layer { position: fixed; inset: 0; pointer-events: none; }
+
+/* ============================================================
+   BOOT PHASE (autoplay)
+   ============================================================ */
+#boot {
+  background: var(--crt-bg);
+  z-index: 50;
+  overflow: hidden;
+}
+#boot::before {
+  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.18) 3px, rgba(0,0,0,0) 4px);
+}
+#boot::after {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%),
+    radial-gradient(circle at 50% 0%, rgba(111,200,154,0.06), transparent 70%);
+}
+.boot-content {
+  position: absolute; inset: 0;
+  padding: 60px 64px;
+  display: flex; flex-direction: column;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--phos);
+  text-shadow: 0 0 0.5px rgba(111,200,154,0.6), 0 0 5px rgba(111,200,154,0.2);
+  z-index: 2;
+  overflow: hidden;
+}
+.boot-content .head {
+  color: var(--phos-dim);
+  margin-bottom: 18px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.boot-content .head b { color: var(--phos-bright); font-weight: 400; }
+.boot-content pre {
+  color: var(--phos); white-space: pre; margin: 0;
+  font-family: var(--mono); font-size: 13px; line-height: 1.75;
+}
+.boot-content pre .ok { color: var(--phos); }
+.boot-content pre .warn { color: #ff9a55; }
+.boot-content pre .ts { color: rgba(111,200,154,0.35); margin-right: 8px; }
+.boot-content pre .dim { color: var(--phos-dim); }
+
+/* ============================================================
+   SPLASH (autoplay) — phosphor logo reveal
+   ============================================================ */
+#splash {
+  background: var(--crt-bg);
+  z-index: 49;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 36px;
+  opacity: 0;
+}
+#splash::before {
+  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.18) 3px, rgba(0,0,0,0) 4px);
+}
+#splash::after {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%),
+    radial-gradient(circle at 50% 0%, rgba(111,200,154,0.06), transparent 70%);
+}
+
+.logo-wrap {
+  position: relative;
+  width: clamp(200px, 36vw, 420px);
+  aspect-ratio: 96.520073 / 42.426407;
+  z-index: 6;
+  /* glow */
+  filter:
+    drop-shadow(0 0 8px rgba(111,200,154,0.6))
+    drop-shadow(0 0 22px rgba(111,200,154,0.35));
+}
+.logo-half {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.logo-half svg {
+  width: 100%; height: 100%;
+  display: block;
+  fill: var(--phos-bright);
+}
+
+/* the reveal — each half clips inward from its outer edge */
+.logo-half.left  { clip-path: inset(0 100% 0 0); }
+.logo-half.right { clip-path: inset(0 0 0 100%); }
+.logo-half.left.go  { animation: revealLeft  1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.logo-half.right.go { animation: revealRight 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+@keyframes revealLeft {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes revealRight {
+  from { clip-path: inset(0 0 0 100%); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+.splash-name {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 56px);
+  color: var(--phos-bright);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  z-index: 6;
+  text-shadow: 0 0 8px rgba(111,200,154,0.5), 0 0 18px rgba(111,200,154,0.3);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.splash-name.in { opacity: 1; transform: translateY(0); }
+.splash-name .dot { color: var(--phos); }
+
+.splash-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--phos-dim);
+  z-index: 6;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.2s;
+}
+.splash-sub.in { opacity: 1; }
+
+/* ============================================================
+   TUNNEL PHASE — scroll-driven
+   ============================================================ */
+#tunnel-canvas {
+  position: fixed; inset: 0;
+  z-index: 1;
+  width: 100vw; height: 100vh;
+  opacity: 0;
+  pointer-events: none;
+}
+#tunnel-ui {
+  z-index: 7;
+  opacity: 0;
+}
+
+.chapter {
+  position: absolute;
+  width: min(540px, 86vw);
+  opacity: 0;
+  transition: opacity 0.55s ease, transform 0.55s ease;
+  pointer-events: none;
+}
+.chapter.in { opacity: 1; pointer-events: auto; }
+.chapter .idx {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--phos-bright);
+  margin-bottom: 16px;
+  text-shadow: 0 0 12px var(--phos);
+}
+.chapter h2 {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  margin: 0 0 16px;
+  color: #fff;
+  text-wrap: balance;
+  text-shadow: 0 0 28px rgba(111,200,154,0.3);
+}
+.chapter h2 .a {
+  color: var(--tube-accent, #F4B182); /* copper/amber accent */
+  text-shadow: 0 0 22px var(--tube-accent-glow, rgba(244,177,130,0.7));
+  transition: color 0.35s ease, text-shadow 0.35s ease;
+}
+.chapter p {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.92);
+  max-width: 52ch;
+  margin: 0 0 12px;
+}
+.chapter p .mute { color: rgba(255,255,255,0.55); }
+
+details.more {
+  margin-top: 18px; padding-top: 14px;
+  border-top: 1px solid rgba(111,200,154,0.3);
+}
+details.more summary {
+  cursor: pointer; color: var(--phos-bright);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  list-style: none; user-select: none;
+}
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::after { content: " +"; }
+details.more[open] summary::after { content: " −"; }
+details.more dl {
+  margin-top: 12px;
+  display: grid; grid-template-columns: max-content 1fr;
+  gap: 6px 22px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+details.more dt { color: #fff; }
+details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
+
+.pos-left  { top: 50%; left: 6vw;  transform: translateY(-50%); }
+.pos-right { top: 50%; right: 6vw; transform: translateY(-50%); }
+.pos-bot-l { bottom: 14vh; left: 6vw; }
+.pos-bot-r { bottom: 14vh; right: 6vw; }
+.pos-top-l { top: 14vh; left: 6vw; }
+.pos-top-r { top: 14vh; right: 6vw; }
+
+/* top header + bottom progress (during tunnel + vapor) */
+.top {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 30;
+  padding: 18px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.top.on { opacity: 1; }
+.top * { pointer-events: auto; }
+.top .brand { font-family: var(--sans); color: #fff; font-weight: 600; font-size: 14px; text-transform: none; letter-spacing: -0.005em; }
+.top .brand .d { color: var(--phos); }
+.top nav { display: flex; gap: 22px; }
+.top nav a { color: rgba(255,255,255,0.55); text-decoration: none; }
+.top nav a:hover { color: var(--phos-bright); }
+
+.pbar {
+  position: fixed; bottom: 24px; left: 28px; right: 28px;
+  z-index: 30;
+  display: grid; grid-template-columns: max-content 1fr max-content;
+  gap: 22px; align-items: center;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.14em; color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.pbar.on { opacity: 1; }
+.pbar .track { height: 1px; background: rgba(255,255,255,0.18); position: relative; }
+.pbar .fill {
+  position: absolute; left: 0; top: 0; height: 1px;
+  background: linear-gradient(to right, var(--phos-dim), var(--phos-bright));
+  width: 0%;
+  box-shadow: 0 0 8px var(--phos);
+}
+.pbar .pct { color: #fff; }
+.pbar .chapter-tick {
+  position: absolute; width: 1px; height: 5px;
+  background: rgba(255,255,255,0.45); top: -2px;
+}
+
+.hint {
+  position: fixed; bottom: 8vh; left: 50%;
+  transform: translateX(-50%);
+  z-index: 28;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+.hint.on { opacity: 1; }
+.hint::after {
+  content: ""; width: 1px; height: 28px;
+  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.6));
+  animation: drop 2s ease-in-out infinite;
+}
+@keyframes drop {
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(6px); }
+}
+
+/* ============================================================
+   OUTRO — Starfield Layout
+   ============================================================ */
+#vapor {
+  z-index: 0;
+  background: var(--crt-bg);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 32px 70px;
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* background canvas for Starfield */
+.bg-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+
+/* reveal glow that makes the starfield space read as lit during #4 emerge */
+#vaporGlow {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 46%, rgba(34,60,48,0.6) 0%, rgba(16,28,22,0.35) 42%, rgba(8,13,10,0) 72%);
+}
+
+/* edge vignette */
+#vapor::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.75) 95%);
+  z-index: 2; pointer-events: none;
+}
+
+/* === shared outro content === */
+.vapor-content {
+  position: relative;
+  z-index: 6;
+  max-width: 1100px;
+  width: 100%;
+  text-align: center;
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+.vapor-content .eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.6em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+.vapor-content h1 {
+  font-family: var(--sans);
+  font-weight: 900;
+  font-size: clamp(48px, 8vw, 120px);
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  margin: 0;
+  color: #fff;
+}
+.vapor-content h1 em { font-style: italic; font-weight: 300; }
+.vapor-content .lede {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: clamp(15px, 1.6vw, 17px);
+  color: rgba(255,255,255,0.85);
+  max-width: 60ch;
+  line-height: 1.55;
+}
+
+.vapor-posts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 1080px;
+}
+.vapor-post {
+  background: rgba(7, 12, 10, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(111, 200, 154, 0.25);
+  border-radius: 6px;
+  padding: 20px 22px;
+  text-decoration: none;
+  color: #fff;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.vapor-post:hover {
+  transform: translateY(-4px);
+  border-color: var(--tube-accent);
+  box-shadow: 0 12px 30px rgba(244, 177, 130, 0.15);
+}
+.vapor-post .meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex; gap: 10px;
+  color: var(--phos);
+}
+.vapor-post:hover .meta {
+  color: var(--tube-accent);
+}
+.vapor-post h3 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 18px;
+  margin: 0 0 6px;
+  line-height: 1.2;
+  color: #fff;
+}
+.vapor-post p {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  color: rgba(255,255,255,0.7);
+}
+.vapor-post .meta .tag {
+  color: var(--phos-dim);
+}
+.vapor-post:hover .meta .tag {
+  color: var(--phos-bright);
+}
+
+.vapor-socials {
+  display: flex; gap: 16px;
+  justify-content: center; align-items: center;
+}
+.vapor-socials a {
+  width: 52px; height: 52px;
+  border: 1px solid rgba(111, 200, 154, 0.3);
+  border-radius: 50%;
+  background: rgba(7, 12, 10, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  transition: border-color 0.3s, background 0.3s, transform 0.3s, box-shadow 0.3s, color 0.3s;
+}
+.vapor-socials a:hover {
+  transform: translateY(-2px);
+  border-color: var(--tube-accent);
+  color: var(--tube-accent);
+  box-shadow: 0 5px 15px rgba(244, 177, 130, 0.2);
+}
+.vapor-socials a svg, .vapor-socials a img {
+  width: 22px; height: 22px;
+  fill: currentColor; color: inherit;
+}
+
+/* === green theme overrides === */
+body.v-green-theme #vapor { background: var(--crt-bg); }
+body.v-green-theme .vapor-content h1 { text-shadow: 0 0 18px var(--tube-accent-glow); }
+body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight: 300; }
+body.v-green-theme .vapor-content .eyebrow { color: var(--phos-bright); text-shadow: 0 0 10px rgba(111,200,154,0.7); }
+
+.vapor-credits {
+  position: absolute;
+  bottom: 22px; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--phos-dim);
+  z-index: 6;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ============================================================
+   TEST CONTROLS PANEL
+   ============================================================ */
+.testpanel {
+  position: fixed; top: 12px; right: 12px;
+  z-index: 70;
+  background: rgba(7,12,10,0.86);
+  border: 1px solid rgba(111,200,154,0.35);
+  border-radius: 6px;
+  padding: 9px 11px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--phos);
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  min-width: 196px; max-width: 210px;
+  max-height: calc(100vh - 24px); overflow-y: auto;
+}
+.testpanel .tp-title {
+  color: var(--phos-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 9px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.testpanel .tp-body {
+  display: flex; flex-direction: column; gap: 7px;
+  margin-top: 9px;
+}
+.testpanel.collapsed .tp-body { display: none; }
+.testpanel .tp-row { display: flex; flex-direction: column; gap: 3px; }
+.testpanel .tp-label {
+  color: rgba(184,240,208,0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 9px;
+  display: flex; justify-content: space-between; gap: 8px;
+}
+.testpanel .tp-label span { white-space: nowrap; }
+.testpanel .tp-val { color: var(--phos-bright); }
+.testpanel .tp-seg { display: flex; gap: 6px; }
+.testpanel .tp-seg button {
+  flex: 1; cursor: pointer;
+  background: rgba(111,200,154,0.08);
+  border: 1px solid rgba(111,200,154,0.3);
+  color: var(--phos);
+  font-family: var(--mono); font-size: 10px;
+  padding: 4px 4px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.testpanel .tp-seg button.on {
+  background: var(--phos); color: var(--crt-bg);
+  border-color: var(--phos-bright);
+}
+.testpanel input[type=range] {
+  width: 100%; accent-color: var(--phos);
+  height: 2px; cursor: pointer; margin: 1px 0;
+}
+.testpanel .tp-collapse {
+  cursor: pointer; color: var(--phos-dim);
+  background: none; border: none;
+  font-family: var(--mono); font-size: 13px; line-height: 1;
+  padding: 0 2px;
+}
+.testpanel .tp-collapse:hover { color: var(--phos-bright); }
+.testpanel .tp-btn {
+  cursor: pointer; width: 100%;
+  background: rgba(111,200,154,0.08);
+  border: 1px solid rgba(111,200,154,0.3);
+  color: var(--phos);
+  font-family: var(--mono); font-size: 10px;
+  padding: 5px 9px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  transition: background .2s, color .2s, border-color .2s;
+  text-align: left; display: flex; justify-content: space-between; align-items: center;
+}
+.testpanel .tp-btn:hover { border-color: var(--phos); }
+.testpanel .tp-btn.on { background: var(--phos); color: var(--crt-bg); border-color: var(--phos-bright); }
+.testpanel .tp-btn .k { opacity: 0.55; font-size: 9px; }
+.testpanel .tp-btn.on .k { opacity: 0.85; }
+.testpanel .tp-btn.tp-sub { font-size: 9px; padding: 4px 9px 4px 14px; opacity: 0.92; }
+.testpanel .tp-sep { height: 1px; background: rgba(111,200,154,0.18); margin: 1px 0; }
+.testpanel .tp-scrubrow { display: flex; gap: 6px; align-items: center; }
+.testpanel .tp-play { width: 34px; flex: 0 0 auto; justify-content: center; padding: 5px 0; }
+.testpanel .tp-hint { color: var(--phos-dim); font-size: 9px; line-height: 1.45; letter-spacing: 0.03em; }
+
+/* DEBUG — projected tube-opening marker (validation for projectTubeOpening) */
+#openingDot {
+  display: none;
+  position: fixed; left: 0; top: 0;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: #ff2bd6;
+  box-shadow: 0 0 12px rgba(255,43,214,0.9), 0 0 30px rgba(255,43,214,0.5);
+  z-index: 40; /* below boot/splash (49-50) so it only shows during the tunnel */
+  pointer-events: none;
+}
+#openingRing {
+  display: none;
+  position: fixed; left: 0; top: 0;
+  border: 1px solid rgba(255,43,214,0.55);
+  border-radius: 50%;
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* film grain */
+.grain {
+  position: fixed; inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.5"/></svg>');
+  opacity: 0.05;
+}
+</style>
 </head>
+<body class="locked v-green-theme">
 
-<body>
-  <div class="background"></div>
-  <h1>Landing page em construção</h1>
-  <img src="/paulin2.jpg" alt="Paulin">
+<div class="scroller"></div>
 
-  <script>
-    var colour="random"; // "random" can be replaced with any valid colour ie: "red"...
-    var sparkles=100;// increase of decrease for number of sparkles falling
+<!-- ====================== BOOT (autoplay) ====================== -->
+<div class="layer" id="boot">
+  <div class="boot-content">
+    <div class="head"><b>alan@barzilay</b>:~/sites/personal $ ./boot --landing</div>
+    <pre id="bootLog"></pre>
+  </div>
+</div>
 
-    var x=ox=400;
-    var y=oy=300;
-    var swide=800;
-    var shigh=600;
-    var sleft=sdown=0;
-    var tiny=new Array();
-    var star=new Array();
-    var starv=new Array();
-    var starx=new Array();
-    var stary=new Array();
-    var tinyx=new Array();
-    var tinyy=new Array();
-    var tinyv=new Array();
+<!-- ====================== SPLASH (autoplay) — phosphor logo ====================== -->
+<div class="layer" id="splash">
+  <div class="logo-wrap">
+    <!-- left trace -->
+    <div class="logo-half left" id="logoLeft">
+      <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
+        <g transform="translate(13.101604,-35.573723)">
+          <path d="M -7.9846602,67.484737 H 10.778432 c 0.3086,0 0.6001,-0.1426 0.7896,-0.3862 l 7.460031,-9.627573 h 14.680346 c 0.4473,1.7202 1.9995,3 3.8579,3 2.2056,0 4,-1.7944 4,-4 0,-2.2056 -1.7944,-4 -4,-4 -1.8584,0 -3.4106,1.2798 -3.8579,3 H 18.538763 c -0.3086,0 -0.6001,0.1426 -0.789601,0.3862 l -7.46003,9.627573 H -7.9846602 c -0.5522,0 -1,0.4478 -1,1 0,0.5522 0.4478,1 1,1 z M 37.566309,54.470964 c 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 z"/>
+        </g>
+      </svg>
+    </div>
+    <!-- right trace -->
+    <div class="logo-half right" id="logoRight">
+      <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
+        <g transform="translate(13.101604,-35.573723)">
+          <path d="M 78.301524,57.322218 H 62.709556 l -7.25496,-14.126192 c -0.1895,-0.2436 -0.481,-0.386141 -0.7896,-0.3862 l -26.506279,-0.005 c -0.4473,-1.7202 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7944 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 26.016979,0.005 5.99956,12.512392 h -8.873732 c -0.3262,0 -0.6323,0.1592 -0.8193,0.4268 L 42.795361,68.75591 27.954427,68.76903 c -0.4473,-1.7205 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7939 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 15.361434,-0.01312 c 0.3262,-2.79e-4 0.6323,-0.1592 0.8193,-0.4268 l 7.686863,-11.006892 h 26.4795 c 0.5522,0 1,-0.4473 1,-1 0,-0.5527 -0.4478,-1 -1,-1 z M 24.300817,45.804787 c -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 z m -0.204292,25.964246 c -1.103,0 -2,-0.8975 -2,-2 0,-1.1025 0.897,-2 2,-2 1.103,0 2,0.8975 2,2 0,1.1025 -0.897,2 -2,2 z"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div class="splash-name" id="splashName">alan barzilay<span class="dot">.</span></div>
+  <div class="splash-sub" id="splashSub">developer · researcher · maker</div>
+</div>
 
-    colours=new Array('#ff0000','#00ff00','#ffffff','#ff00ff','#ffa500','#ffff00','#00ff00','#ffffff','ff00ff')
+<!-- ====================== TUNNEL ====================== -->
+<canvas id="tunnel-canvas"></canvas>
+<div class="layer" id="tunnel-ui">
+  <div id="cardStage"></div>
+</div>
 
-    n = 10;
-    y = 0;
-    x = 0;
-    n6=(document.getElementById&&!document.all);
-    ns=(document.layers);
-    ie=(document.all);
-    d=(ns||ie)?'document.':'document.getElementById("';
-    a=(ns||n6)?'':'all.';
-    n6r=(n6)?'")':'';
-    s=(ns)?'':'.style';
+<div class="top" id="top">
+  <div class="brand">alan barzilay<span class="d">.</span></div>
+  <nav>
+    <a href="/blog">writing</a>
+    <a href="https://github.com/alan-barzilay">github</a>
+    <a href="https://www.linkedin.com/">linkedin</a>
+    <a href="/feed.xml">rss</a>
+  </nav>
+</div>
 
-    if (ns){
-      for (i = 0; i < n; i++)
-        document.write('<layer name="dots'+i+'" top=0 left=0 width='+i/2+' height='+i/2+' bgcolor=#ff0000></layer>');
+<div class="hint" id="hint">scroll · dive in</div>
+
+<div class="pbar" id="pbar">
+  <span id="pCur">CH 01</span>
+  <div class="track" id="track">
+    <div class="fill" id="pFill"></div>
+  </div>
+  <span class="pct"><span id="pPct">0%</span></span>
+</div>
+
+<!-- ====================== OUTRO ====================== -->
+<div class="layer" id="vapor">
+  <!-- outro canvas -->
+  <canvas class="bg-canvas" id="showcase-canvas"></canvas>
+  <div id="vaporGlow"></div>
+
+  <div class="vapor-content">
+    <div class="eyebrow">a · l · a · n · — · b · a · r · z · i · l · a · y</div>
+    <h1>continue <em>reading.</em></h1>
+    <p class="lede">notes, experiments, longer detours. a tech blog by one specific person writing on his own website.</p>
+
+    <div class="vapor-posts">
+      <a class="vapor-post" href="/blog/making-a-website-in-2025">
+        <div class="meta"><span>2025 · 04 · 12</span><span class="tag">meta</span></div>
+        <h3>making a website in 2025</h3>
+        <p>an overdue rewrite — tooling, regrets, the parts I refused to compromise on.</p>
+      </a>
+      <a class="vapor-post" href="/blog/cemetery">
+        <div class="meta"><span>2025 · 02 · 28</span><span class="tag">side</span></div>
+        <h3>mapping a cemetery, badly</h3>
+        <p>a small geospatial tool for a place I had no business surveying.</p>
+      </a>
+      <a class="vapor-post" href="/blog/nexo">
+        <div class="meta"><span>2024 · 11 · 19</span><span class="tag">nlp</span></div>
+        <h3>nexo — news structure with LLMs</h3>
+        <p>pulling apart a brazilian newsroom&rsquo;s article structure.</p>
+      </a>
+    </div>
+
+    <div class="vapor-socials">
+      <a href="https://github.com/alan-barzilay" aria-label="github">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0.5C5.65 0.5 0.5 5.65 0.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.27-.01-1.16-.02-2.1-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.27-5.24-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18.92-.26 1.91-.39 2.89-.39.98 0 1.97.13 2.89.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.8 1.18 1.83 1.18 3.08 0 4.42-2.69 5.38-5.25 5.66.41.35.78 1.05.78 2.12 0 1.53-.01 2.77-.01 3.15 0 .31.21.67.8.56C20.21 21.38 23.5 17.08 23.5 12 23.5 5.65 18.35 0.5 12 0.5z"/>
+        </svg>
+      </a>
+      <a href="https://www.linkedin.com/" aria-label="linkedin">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.78C0.8 0 0 0.78 0 1.74v20.52C0 23.22.8 24 1.78 24h20.44C23.2 24 24 23.22 24 22.26V1.74C24 .78 23.2 0 22.22 0z"/>
+        </svg>
+      </a>
+      <a href="/feed.xml" aria-label="rss">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 11a9 9 0 0 1 9 9"/>
+          <path d="M4 4a16 16 0 0 1 16 16"/>
+          <circle cx="5" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="vapor-credits">© 2026 · alan barzilay · built by hand</div>
+</div>
+
+<!-- ====================== TEST CONTROLS ====================== -->
+<div class="testpanel" id="testPanel">
+  <div class="tp-title"><span>test controls</span><button class="tp-collapse" id="tpToggle" aria-label="collapse">–</button></div>
+  <div class="tp-body">
+    <div class="tp-row">
+      <div class="tp-label"><span>starfield speed</span><span class="tp-val" id="velVal">5</span></div>
+      <input type="range" id="velSlider" min="1" max="20" step="1" value="5" />
+    </div>
+    <div class="tp-row">
+      <div class="tp-label"><span>starfield rays</span></div>
+      <div class="tp-seg" id="starSeg">
+        <button data-dir="1" class="on">forward</button>
+        <button data-dir="-1">reverse</button>
+      </div>
+    </div>
+    <div class="tp-row">
+      <div class="tp-label"><span>rays focal · y</span><span class="tp-val" id="focalYVal">0.50</span></div>
+      <input type="range" id="focalYSlider" min="0" max="1" step="0.02" value="0.5" />
+    </div>
+    <div class="tp-row">
+      <div class="tp-label"><span>tube particles</span></div>
+      <div class="tp-seg" id="partSeg">
+        <button data-dir="1">forward</button>
+        <button data-dir="-1" class="on">reverse</button>
+      </div>
+    </div>
+    <div class="tp-sep"></div>
+    <button class="tp-btn" id="skipBtn">⏭ skip intro</button>
+    <div class="tp-row">
+      <div class="tp-label"><span>scrub exit</span><span class="tp-val" id="scrubVal">0.780</span></div>
+      <div class="tp-scrubrow">
+        <button class="tp-btn tp-play" id="playBtn" title="play / pause loop">▶</button>
+        <input type="range" id="scrubSlider" min="0.78" max="1" step="0.002" value="0.78" />
+      </div>
+    </div>
+    <button class="tp-btn on" id="emergeBtn">starfield reveal <span class="k">scroll</span></button>
+    <button class="tp-btn tp-sub" id="glowBtn">└ emerge glow <span class="k">off</span></button>
+    <button class="tp-btn tp-sub on" id="behindBtn">└ behind tube · screen-blend <span class="k">on</span></button>
+    <button class="tp-btn tp-sub on" id="outroBgBtn">└ outro bg <span class="k">tube</span></button>
+    <div class="tp-row" style="padding-left:14px;">
+      <div class="tp-label"><span>└ initial radius</span><span class="tp-val" id="r0Val">40</span></div>
+      <input type="range" id="r0Slider" min="0" max="300" step="5" value="40" />
+    </div>
+    <div class="tp-row" style="padding-left:14px;">
+      <div class="tp-label"><span>└ reveal start</span><span class="tp-val" id="startVal">0.840</span></div>
+      <input type="range" id="startSlider" min="0.80" max="0.99" step="0.002" value="0.84" />
+    </div>
+    <div class="tp-row" style="padding-left:14px;">
+      <div class="tp-label"><span>└ go fullscreen</span><span class="tp-val" id="fullVal">0.905</span></div>
+      <input type="range" id="fullSlider" min="0.81" max="1.00" step="0.002" value="0.905" />
+    </div>
+    <div class="tp-row" style="padding-left:14px;">
+      <div class="tp-label"><span>└ content rise @</span><span class="tp-val" id="contentVal">0.920</span></div>
+      <input type="range" id="contentSlider" min="0.9" max="1" step="0.005" value="0.92" />
+    </div>
+    <div class="tp-sep"></div>
+    <div class="tp-row">
+      <div class="tp-label"><span>growth · dist · align</span><span class="tp-val" id="diagVal">–</span></div>
+    </div>
+    <div class="tp-sep"></div>
+    <div class="tp-row">
+      <div class="tp-label"><span>end bend</span><span class="tp-val" id="bendVal">50</span></div>
+      <input type="range" id="bendSlider" min="0" max="60" step="1" value="50" />
+    </div>
+    <div class="tp-row">
+      <div class="tp-label"><span>bend start</span><span class="tp-val" id="bendStartVal">0.98</span></div>
+      <input type="range" id="bendStartSlider" min="0.6" max="0.98" step="0.01" value="0.98" />
+    </div>
+    <div class="tp-row">
+      <div class="tp-label"><span>bend dir °</span><span class="tp-val" id="bendAngVal">90</span></div>
+      <input type="range" id="bendAngSlider" min="0" max="360" step="5" value="90" />
+    </div>
+    <div class="tp-hint">▶ loops the exit · &ldquo;end bend&rdquo; hides the opening till the final corner.</div>
+    <div class="tp-sep"></div>
+    <button class="tp-btn on" id="fogBtn">3D fog <span class="k">on</span></button>
+    <div class="tp-row">
+      <div class="tp-label"><span>rays vs opening</span></div>
+      <div class="tp-seg" id="rayModeSeg">
+        <button data-mode="follow">follow</button>
+        <button data-mode="fade" class="on">fade</button>
+        <button data-mode="shift">shift</button>
+        <button data-mode="fixed">fixed</button>
+      </div>
+    </div>
+    <div class="tp-row" style="padding-left:14px;">
+      <div class="tp-label"><span>&#9492; fade · base</span><span class="tp-val" id="fadeBaseVal">0.18</span></div>
+      <input type="range" id="fadeBaseSlider" min="0.02" max="0.60" step="0.01" value="0.18" />
+    </div>
+    <div class="tp-row" style="padding-left:14px;">
+      <div class="tp-label"><span>&#9492; fade · motion gain</span><span class="tp-val" id="fadeGainVal">0.050</span></div>
+      <input type="range" id="fadeGainSlider" min="0" max="0.20" step="0.005" value="0.05" />
+    </div>
+    <div class="tp-row" style="padding-left:14px;">
+      <div class="tp-label"><span>&#9492; fade · max wipe</span><span class="tp-val" id="fadeMaxVal">0.85</span></div>
+      <input type="range" id="fadeMaxSlider" min="0.20" max="1.00" step="0.05" value="0.85" />
+    </div>
+    <div class="tp-sep"></div>
+    <button class="tp-btn" id="markerBtn">debug · opening marker <span class="k">off</span></button>
+  </div>
+</div>
+
+<!-- DEBUG: projected tube-opening marker -->
+<div id="openingDot"></div>
+<div id="openingRing"></div>
+
+<div class="grain"></div>
+
+<script>
+// ============================================================
+// PHASES — scroll only covers TUNNEL + VAPOR.
+// Boot + splash are autoplay on page load.
+// ============================================================
+const PHASES = {
+  tunnelIn:    0.00,
+  tunnelOut:   0.85,   // camera reaches 0.92, then starts deceleration
+  tunnelEnd:   0.93,   // camera reaches 0.998 (spline exit)
+  tunnelFlash: 0.95,   // escape flash: tunnel canvas opacity fades to 0
+  outroIn:     0.94,   // outro starts fading in
+  outroFull:   0.98,   // outro reaches 1.00 opacity
+};
+
+// ============================================================
+// TEST CONTROLS STATE — tweak speed & directions live
+// ============================================================
+const TEST = {
+  starVelocity: 5,   // single starfield speed (no tiering)
+  starDir: 1,        //  1 = forward (fly into stars)   · -1 = reverse (recede)
+  starFocalY: 0.5,   // vertical position of the rays' vanishing point, as a fraction of canvas height (0 = top)
+  contentRise: 0.92, // SCROLL position where the outro text/cards rise — later = more pure-starfield time before content appears
+  particleDir: -1,   //  1 = forward (drift downstream)  · -1 = reverse (drift back)
+  scrub: { active: false, value: 0.78, playing: false },
+  emerge: true,      // reveal the starfield out of the tube as we scroll
+  emergeGlow: false, // optional lit-glow under the reveal — OFF
+  emergeBehind: false,  // CHANGED: no longer using screen-blend since canvas is now transparent
+  outroBgMatch: true,  // outro/starfield background uses the tube color (#070c0a) vs pure black
+  // ---- single continuous reveal (replaces the tier system) ----
+  // One starfield. We grow a soft circular mask, centred on the screen, from a
+  // small radius to fullscreen as the camera scrolls toward the exit. Smoother
+  // and more continuous than the old 3-step tiering.
+  revealR0: 40,        // starting radius (px) of the reveal circle — small dot at the screen centre
+  revealStartP: 0.84,  // SCROLL position where the reveal begins to open (default: right after the bend, when we're looking down the barrel)
+  revealFullP: 0.905,  // SCROLL position where the reveal reaches fullscreen (default: right before the tube exit)
+  revealAlign: 0.30,   // internal safety gate — suppress the reveal until we're roughly aligned down the barrel (kills bleed during the sharp bend)
+  endBend: 50,         // sharp lateral bend added to the LAST stretch of the tube
+  endBendStart: 0.98,  // where along the tube the end-bend begins (0..1)
+  bendAngle: 90,       // direction of the bend in degrees (0=right, 90=up, 180=left, 270=down)
+  // rays vs opening — how the starfield's vanishing point relates to the moving tube opening:
+  //  'follow' — focal tracks the opening directly (original; trails smear while it moves)
+  //  'fade'   — same as follow, but the trail fade strengthens while the focal moves (wipes stale streaks)
+  //  'shift'  — focal fixed at canvas centre; the CANVAS element is translated onto the opening,
+  //             so the trail history moves rigidly with the field (no smear, trails intact)
+  //  'fixed'  — focal pinned at screen centre / focalY, never moves (mask alone tracks the opening)
+  rayMode: 'fade',
+  // 'fade' mode tuning:
+  fadeBase: 0.18,  // trail fade at rest (higher = shorter trails everywhere)
+  fadeGain: 0.05,  // how strongly focal-point motion increases the wipe (px of movement → extra fade)
+  fadeMax:  0.85,  // cap on the wipe while moving (1 = full clear each frame, no trails during motion)
+  showOpening: false, // debug: magenta dot + ring on the projected tube opening
+};
+let introCancelled = false;
+let lastTCurve = 0;
+let lastOpening = null;
+// shared smoothed reveal centre (projected tube opening, low-passed) — drives
+// BOTH the reveal mask and (optionally) the starfield rays' vanishing point.
+let revealFocalX = null, revealFocalY = null, revealFocalValid = false;
+let starVelMulCurrent = 0.30; // eased star-speed multiplier (slow → full as we near the end)
+let alignSmooth = 0;          // low-passed camera→end alignment (kills per-frame jitter)
+let scrubSlider = null, scrubVal = null;
+window.TEST = TEST;
+
+// jump straight to the unlocked tunnel state (for testing the exit fast)
+function skipIntro() {
+  introCancelled = true;
+  [document.getElementById('boot'), document.getElementById('splash')].forEach(el => {
+    el.style.transition = 'none'; el.style.opacity = '0'; el.style.visibility = 'hidden';
+  });
+  const c = document.getElementById('tunnel-canvas');
+  const u = document.getElementById('tunnel-ui');
+  c.style.transition = 'none'; u.style.transition = 'none';
+  c.style.opacity = '1'; u.style.opacity = '1';
+  document.body.classList.remove('locked');
+  document.getElementById('top').classList.add('on');
+  document.getElementById('pbar').classList.add('on');
+  document.getElementById('hint').classList.remove('on');
+}
+
+// ============================================================
+// BOOT LOGS
+// ============================================================
+const BOOT_LOGS = [
+  ["ok",   "firmware revision 0x2b loaded"],
+  ["ok",   "mounting /experience on /dev/sda1, readonly: false"],
+  ["ok",   "starting personality.bin                                  [ OK ]"],
+  ["ok",   "loading modules: linux, python, hands, opinions           [ OK ]"],
+  ["warn", "module curiosity: too many side projects                  [ WARN ]"],
+  ["ok",   "phosphor lit"],
+  ["ok",   ""],
+  ["ok",   "user=alan  shell=/bin/zsh  pwd=~/sites/personal"],
+  ["ok",   "status: alive · uptime: 12y 03m 14d"],
+];
+
+function lineToHtml(idx, kind, msg, partial) {
+  const ts = `[ 00:00:00.${String(60 + idx*90).padStart(4,'0')} ]`;
+  const tag = kind === "warn" ? `<span class="warn">[ warn]</span>` : `<span class="ok">[ ok ]</span>`;
+  const m = partial === undefined ? msg : msg.slice(0, partial);
+  const cursor = partial === undefined ? "" : `<span class="dim">_</span>`;
+  return `<span class="ts">${ts}</span>${tag} ${m}${cursor}\n`;
+}
+
+// ============================================================
+// AUTOPLAY — boot → splash → reveal logo → unlock scroll
+// ============================================================
+const bootEl   = document.getElementById('boot');
+const bootLog  = document.getElementById('bootLog');
+const splashEl = document.getElementById('splash');
+const logoLeft = document.getElementById('logoLeft');
+const logoRight= document.getElementById('logoRight');
+const splashName = document.getElementById('splashName');
+const splashSub  = document.getElementById('splashSub');
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function typeBootLogs() {
+  let out = "";
+  for (let i = 0; i < BOOT_LOGS.length; i++) {
+    const [kind, msg] = BOOT_LOGS[i];
+    if (!msg) {
+      out += lineToHtml(i, kind, "");
+      bootLog.innerHTML = out;
+      await sleep(80);
+      continue;
+    }
+    for (let c = 0; c <= msg.length; c++) {
+      bootLog.innerHTML = out + lineToHtml(i, kind, msg, c);
+      await sleep(2 + Math.random() * 5);
+    }
+    out += lineToHtml(i, kind, msg);
+    await sleep(30 + Math.random() * 60);
+  }
+  bootLog.innerHTML = out;
+}
+
+async function runAutoplay() {
+  // 1. boot logs typing
+  await typeBootLogs();
+  await sleep(280);
+  if (introCancelled) return;
+
+  // 2. smooth handoff
+  splashEl.style.opacity = '1';
+  bootEl.style.transition = 'opacity 0.6s ease';
+  bootEl.style.opacity = '0';
+  await sleep(620);
+  bootEl.style.visibility = 'hidden';
+  if (introCancelled) return;
+
+  // 3. trigger logo reveal
+  await sleep(120);
+  logoLeft.classList.add('go');
+  logoRight.classList.add('go');
+  await sleep(1600);
+  if (introCancelled) return;
+
+  // 4. show name + sub
+  splashName.classList.add('in');
+  await sleep(260);
+  splashSub.classList.add('in');
+  await sleep(900);
+  if (introCancelled) return;
+
+  // 5. fade splash → tunnel
+  const canvas = document.getElementById('tunnel-canvas');
+  const tunnelUI = document.getElementById('tunnel-ui');
+  canvas.style.transition = 'opacity 0.9s ease';
+  tunnelUI.style.transition = 'opacity 0.9s ease';
+  canvas.style.opacity = '1';
+  tunnelUI.style.opacity = '1';
+  splashEl.style.transition = 'opacity 0.9s ease, transform 0.9s cubic-bezier(0.22,1,0.36,1)';
+  splashEl.style.transform = 'scale(0.92)';
+  splashEl.style.opacity = '0';
+  await sleep(950);
+  splashEl.style.visibility = 'hidden';
+
+  // 6. unlock scroll & show chrome
+  document.body.classList.remove('locked');
+  document.getElementById('top').classList.add('on');
+  document.getElementById('pbar').classList.add('on');
+  document.getElementById('hint').classList.add('on');
+  setTimeout(() => document.getElementById('hint').classList.remove('on'), 4500);
+}
+
+// ============================================================
+// TUNNEL (three.js phosphor green) — scroll-driven
+// ============================================================
+const tunnelCanvas = document.getElementById('tunnel-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas: tunnelCanvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0); // transparent background so starfield shows through
+
+const scene = new THREE.Scene();
+const fogDefault = new THREE.FogExp2(0x070c0a, 0.038);
+scene.fog = fogDefault;
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+// Track whether fog is enabled (for toggle)
+let fogEnabled = true;
+
+const N = 120;
+function buildBasePoints() {
+  const pts = [];
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    const z = -i * 4.5;
+    const x = Math.sin(t * Math.PI * 4) * 8 + Math.sin(t * Math.PI * 9) * 2;
+    const y = Math.cos(t * Math.PI * 3) * 5 + Math.sin(t * Math.PI * 11) * 1.5;
+    pts.push(new THREE.Vector3(x, y, z));
+  }
+  return pts;
+}
+// Optional SHARP BEND on the final stretch — applied as an additive deformation
+// on top of WHATEVER base centerline you have, so the far opening stays hidden
+// behind the tube wall until the camera rounds the corner near the very end.
+// Works with any tube form; set TEST.endBend = 0 to get the original shape back.
+function applyEndBend(pts) {
+  const amt = TEST.endBend, startF = TEST.endBendStart;
+  if (!amt) return pts;
+  const n = pts.length;
+  const a = TEST.bendAngle * Math.PI / 180;
+  const dir = new THREE.Vector3(Math.cos(a), Math.sin(a), 0); // unit vector in the screen plane
+  return pts.map((p, i) => {
+    const t = i / (n - 1);
+    if (t <= startF) return p;
+    const u = (t - startF) / (1 - startF); // 0..1 across the bend zone
+    const k = u * u;                        // accelerating ⇒ sharp right at the end
+    return p.clone().addScaledVector(dir, amt * k);
+  });
+}
+let curve = new THREE.CatmullRomCurve3(applyEndBend(buildBasePoints()), false, 'catmullrom', 0.5);
+
+// Green wireframes (terminal aesthetic) — rebuilt by buildTube() so the bend
+// controls can reshape the tube live.
+let tubeMesh1 = null, tubeMesh2 = null;
+function buildTube() {
+  curve = new THREE.CatmullRomCurve3(applyEndBend(buildBasePoints()), false, 'catmullrom', 0.5);
+  if (tubeMesh1) { scene.remove(tubeMesh1); tubeMesh1.geometry.dispose(); }
+  if (tubeMesh2) { scene.remove(tubeMesh2); tubeMesh2.geometry.dispose(); }
+  const g1 = new THREE.TubeGeometry(curve, 800, 6, 16, false);
+  tubeMesh1 = new THREE.LineSegments(
+    new THREE.WireframeGeometry(g1),
+    new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  scene.add(tubeMesh1);
+  g1.dispose();
+  const g2 = new THREE.TubeGeometry(curve, 600, 6, 6, false);
+  tubeMesh2 = new THREE.LineSegments(
+    new THREE.WireframeGeometry(g2),
+    new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  scene.add(tubeMesh2);
+  g2.dispose();
+  if (typeof rings !== 'undefined' && rings.length) layoutRings();
+}
+// coalesce rapid slider drags into one rebuild per frame (geometry rebuild is
+// the only heavy bit — don't run it several times per input event)
+let tubeRebuildQueued = false;
+function requestTubeRebuild() {
+  if (tubeRebuildQueued) return;
+  tubeRebuildQueued = true;
+  requestAnimationFrame(() => { tubeRebuildQueued = false; buildTube(); });
+}
+// initial tube is built once `rings` exist (see after the ring setup below)
+
+const CHAPTERS = [
+  { id: "intro",    label: "intro",       at: 0.05, pos: "pos-left",
+    head: 'I&rsquo;m <em>Alan</em>. <span class="a">Welcome.</span>',
+    lede: 'Developer &amp; researcher. ML / NLP by trade — <span class="mute">tinkerer, sysadmin, occasional educator. São Paulo, Brazil.</span>' },
+  { id: "oss",      label: "open source", at: 0.20, pos: "pos-right",
+    head: '<span class="a">Open source.</span><br/>For a decade.',
+    lede: 'Sole maintainer of <strong>pipreqs</strong>. Two-time GSoC. <span class="mute">A long tail of patches across the python &amp; linux ecosystem.</span>',
+    more: [["pipreqs","sole maintainer · 2019 → now"],["gsoc","2017, 2018"],["misc","ongoing patches &amp; reviews"]] },
+  { id: "systems",  label: "systems",     at: 0.34, pos: "pos-bot-l",
+    head: 'Running <span class="a">my own metal.</span>',
+    lede: 'Linux sysadmin for as long as I&rsquo;ve been a developer. <span class="mute">Self-host most of what I rely on day-to-day.</span>',
+    more: [["os","arch · debian · nixos"],["infra","nginx · postgres · wireguard · zfs · borg"]] },
+  { id: "teaching", label: "teaching",    at: 0.48, pos: "pos-top-r",
+    head: 'The <span class="a">teaching half</span><br/>of the job.',
+    lede: 'Coursera course on NLP. Years volunteering in a Brazilian youth movement. <span class="mute">Science-fair judging. Graduate guest lectures.</span>',
+    more: [["coursera","authored an NLP course (2021)"],["volunteer","youth movement educator · years"],["judge","STEM fair · regional &amp; national"]] },
+  { id: "diy",      label: "built",       at: 0.62, pos: "pos-bot-r",
+    head: 'Built <span class="a">things that aren&rsquo;t code.</span>',
+    lede: 'Bike mechanic. Backyard aquaponics. Charcoal kiln. A toy OS. <span class="mute">One physical project on the bench at all times.</span>',
+    more: [["2018","community workshop bike mechanic"],["2019","aquaponics loop · 3 summers"],["2021","steel-drum charcoal kiln"],["2023","hand-rolled x86 toy OS"]] },
+  { id: "work",     label: "work",        at: 0.76, pos: "pos-left",
+    head: 'Research &amp; industry,<br/><span class="a">in roughly equal measure.</span>',
+    lede: 'Master&rsquo;s in CS. Years of applied research in NLP. Ongoing industry career building data and ML systems.' },
+];
+
+const stageEl = document.getElementById('cardStage');
+CHAPTERS.forEach((ch, i) => {
+  const moreHtml = ch.more ? `<details class="more"><summary>read more</summary>
+    <dl>${ch.more.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>
+  </details>` : '';
+  const html = `<div class="chapter ${ch.pos}" data-i="${i}">
+    <div class="idx">${String(i+1).padStart(2,"0")} · ${ch.label}</div>
+    <h2>${ch.head}</h2>
+    <p>${ch.lede}</p>
+    ${moreHtml}
+  </div>`;
+  stageEl.insertAdjacentHTML('beforeend', html);
+});
+
+CHAPTERS.forEach((ch) => {
+  const t = document.createElement('div');
+  t.className = 'chapter-tick';
+  t.style.left = (ch.at * 100) + '%';
+  document.getElementById('track').appendChild(t);
+});
+
+// Green station rings
+const rings = [];
+const ringHalos = [];
+const ringLocalT = [];
+CHAPTERS.forEach((ch) => {
+  const local = (ch.at - PHASES.tunnelIn) / (PHASES.tunnelEnd - PHASES.tunnelIn);
+  if (local < 0 || local > 1) return;
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(5.2, 0.10, 6, 96),
+    new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  scene.add(ring);
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(5.5, 0.04, 4, 64),
+    new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  scene.add(halo);
+  rings.push(ring);
+  ringHalos.push(halo);
+  ringLocalT.push(Math.min(local, 0.999));
+});
+// (re)place rings/halos along the current curve — called after any bend rebuild
+function layoutRings() {
+  rings.forEach((ring, i) => {
+    const tt = ringLocalT[i];
+    const p = curve.getPointAt(tt);
+    const tan = curve.getTangentAt(tt);
+    ring.position.copy(p);
+    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), tan.clone().normalize());
+    const halo = ringHalos[i];
+    halo.position.copy(p);
+    halo.quaternion.copy(ring.quaternion);
+  });
+}
+buildTube(); // builds the tube meshes AND lays out the rings on the curve
+
+// White particles inside the tube
+const ptGeo = new THREE.BufferGeometry();
+const ptCount = 700;
+const ptPos = new Float32Array(ptCount * 3);
+const ptSeeds = new Float32Array(ptCount * 3);
+for (let i = 0; i < ptCount; i++) {
+  ptSeeds[i*3] = Math.random();
+  ptSeeds[i*3+1] = Math.random() * Math.PI * 2;
+  ptSeeds[i*3+2] = 1.8 + Math.random() * 3.4;
+}
+ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPos, 3));
+const ptMat = new THREE.PointsMaterial({
+  color: 0xffffff, size: 0.06, transparent: true, opacity: 0.6,
+  blending: THREE.AdditiveBlending, depthWrite: false
+});
+const points = new THREE.Points(ptGeo, ptMat);
+scene.add(points);
+
+// ============================================================
+// OUTRO — Starfield Integration
+// ============================================================
+let outroActive = false;
+
+const StarfieldEffect = {
+  stars: [],
+  cx: 0, cy: 0,
+  fov: 300,
+  // single, uniform starfield. Every star is always drawn at full speed — the
+  // reveal is done purely by a growing circular MASK on the #vapor layer, so
+  // the field reads as one continuous effect carried into the outro.
+  // spread distribution: a band 0..1 only controls how far from the axis a star
+  // sits, giving a natural density falloff from centre to edges.
+  respawnXY(s) {
+    const spread = 60 + Math.pow(s.band, 0.85) * 1040; // ~60 (centre) → ~1100 (edge)
+    const ang = Math.random() * Math.PI * 2;
+    const r = spread * (0.18 + 0.82 * Math.random());
+    s.x = Math.cos(ang) * r;
+    s.y = Math.sin(ang) * r;
+  },
+  setup() {
+    const cv = document.getElementById('showcase-canvas');
+    this.cx = cv.width / 2;
+    this.cy = cv.height * TEST.starFocalY;
+    this.stars = [];
+    const count = 340;
+    for (let i = 0; i < count; i++) {
+      const s = { band: i / (count - 1), x: 0, y: 0, z: Math.random() * 800, prevZ: 0 };
+      this.respawnXY(s);
+      s.prevZ = s.z;
+      this.stars.push(s);
+    }
+  },
+  draw() {
+    const cv = document.getElementById('showcase-canvas');
+    const ctx = cv.getContext('2d');
+
+    // ---- rays vs opening: pick the vanishing point per mode ----
+    const mode = TEST.rayMode;
+    let fx = cv.width / 2, fy = cv.height * TEST.starFocalY; // 'fixed' default
+    if ((mode === 'follow' || mode === 'fade') && revealFocalValid) {
+      fx = revealFocalX;
+      fy = revealFocalY;
+    } else if (mode === 'shift') {
+      fx = cv.width / 2;
+      fy = cv.height / 2; // internal focal never moves; the CANVAS moves instead
+    }
+    this.cx = fx;
+    this.cy = fy;
+
+    // ---- trail fade: 'fade' mode wipes harder while the focal is moving ----
+    let fade = TEST.fadeBase;
+    if (mode === 'fade') {
+      const mvx = fx - (this._pfx ?? fx), mvy = fy - (this._pfy ?? fy);
+      fade = Math.min(TEST.fadeMax, TEST.fadeBase + Math.hypot(mvx, mvy) * TEST.fadeGain);
+    }
+    this._pfx = fx; this._pfy = fy;
+    ctx.fillStyle = TEST.outroBgMatch ? `rgba(7, 12, 10, ${fade.toFixed(3)})` : `rgba(0, 0, 0, ${fade.toFixed(3)})`;
+    ctx.fillRect(0, 0, cv.width, cv.height);
+
+    // ---- 'shift' mode: translate the canvas ELEMENT onto the opening, so the
+    // trail history moves rigidly with the field (no smearing) ----
+    if (mode === 'shift' && revealFocalValid) {
+      cv.style.transform = `translate(${(revealFocalX - cv.width / 2).toFixed(1)}px, ${(revealFocalY - cv.height / 2).toFixed(1)}px)`;
+    } else if (cv.style.transform) {
+      cv.style.transform = '';
     }
 
-    if (ie)
-      document.write('<div id="con" style="position:absolute;top:0px;left:0px"><div style="position:relative">');
+    const velocity = TEST.starVelocity * TEST.starDir;
 
-    if (ie||n6){
-      for (i = 0; i < n; i++)
-        document.write('<div id="dots'+i+'" style="position:absolute;top:0px;left:0px;width:'+i/2+'px;height:'+i/2+'px;background:#ff0000;font-size:'+i/2+'"></div>');
+    this.stars.forEach(s => {
+      s.prevZ = s.z;
+      s.z -= velocity;
+
+      if (s.z <= 1) {
+        s.z = 800; this.respawnXY(s); s.prevZ = s.z;
+      } else if (s.z >= 800) {
+        s.z = 1; this.respawnXY(s); s.prevZ = s.z;
+      }
+
+      const px = (s.x / s.z) * this.fov + this.cx;
+      const py = (s.y / s.z) * this.fov + this.cy;
+
+      const lx = (s.x / s.prevZ) * this.fov + this.cx;
+      const ly = (s.y / s.prevZ) * this.fov + this.cy;
+
+      if (px < 0 || px > cv.width || py < 0 || py > cv.height) return;
+
+      const alpha = 1 - (s.z / 800);
+      if (alpha <= 0.01) return;
+      ctx.strokeStyle = `rgba(184, 240, 208, ${alpha})`;
+      ctx.lineWidth = Math.min(2.5, 1.2 + alpha);
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+    });
+  }
+};
+
+function resizeOutroCanvas() {
+  const cv = document.getElementById('showcase-canvas');
+  if (cv) {
+    cv.width = window.innerWidth;
+    cv.height = window.innerHeight;
+  }
+}
+
+// ============================================================
+// PHASE OPACITY (driven by scroll for tunnel + vapor)
+// ============================================================
+const vaporEl = document.getElementById('vapor');
+const vaporContentEl = document.querySelector('.vapor-content');
+const vaporGlowEl = document.getElementById('vaporGlow');
+const diagEl = document.getElementById('diagVal');
+const topEl   = document.getElementById('top');
+const pbarEl  = document.getElementById('pbar');
+
+function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+function smoothstep(x) { return x*x*(3 - 2*x); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+
+function updateLayers(p) {
+  // Tunnel canvas opacity: fully visible through tunnelEnd, then fade to 0 by tunnelFlash
+  const tunnelOpacity = p > PHASES.tunnelEnd
+    ? 1 - clamp01((p - PHASES.tunnelEnd) / (PHASES.tunnelFlash - PHASES.tunnelEnd))
+    : 1;
+  tunnelCanvas.style.opacity = tunnelOpacity;
+  document.getElementById('tunnel-ui').style.opacity = tunnelOpacity;
+
+  // #4 starfield emerge owns the vapor reveal across a wider range
+  if (TEST.emerge) {
+    updateEmerge(p);
+    return;
+  }
+
+  // Non-emerge path (fallback, rarely used now)
+  if (p > PHASES.outroIn) {
+    vaporEl.style.visibility = "visible";
+    const t = clamp01((p - PHASES.outroIn) / (PHASES.outroFull - PHASES.outroIn));
+    vaporEl.style.webkitMaskImage = 'none';
+    vaporEl.style.maskImage = 'none';
+    vaporEl.style.zIndex = '';
+    vaporGlowEl.style.opacity = 0;
+    vaporEl.style.opacity = t*t*(3-2*t);
+    vaporContentEl.style.transform = '';
+    vaporContentEl.style.opacity = '';
+    const wasActive = outroActive;
+    outroActive = t > 0.05;
+    if (outroActive && !wasActive) {
+      StarfieldEffect.setup();
     }
+  } else {
+    vaporEl.style.opacity = 0;
+    vaporEl.style.visibility = "hidden";
+    vaporEl.style.webkitMaskImage = 'none';
+    vaporEl.style.maskImage = 'none';
+    vaporEl.style.zIndex = '';
+    vaporGlowEl.style.opacity = 0;
+    vaporContentEl.style.transform = '';
+    vaporContentEl.style.opacity = '';
+    outroActive = false;
+  }
+}
 
-    if (ie)
-      document.write('</div></div>');
-    (ns||n6)?window.captureEvents(Event.MOUSEMOVE):0;
+// #4 the starfield reveals through a SOFT-EDGED circle centered on the tube's
+// vanishing point — it grows out of the far opening and feathers into the walls
+// (no hard border), fades in (no pop), fills the screen as we punch through,
+// optional glow keeps it from pure black, then the content rises from the bottom.
+// project the tube's far opening (centre + edge) to screen, so the reveal can
+// be sized/placed to the REAL opening rather than a guessed disc.
+function projectTubeOpening() {
+  // TRUE end of the spline — by construction the centre of the exit opening
+  // (the tube is extruded along the whole curve, and applyEndBend deforms the
+  // control points BEFORE the curve is built, so this tracks the bend sliders).
+  const ahead = 0.999;
+  const C = curve.getPointAt(ahead);
+  const T = curve.getTangentAt(ahead).clone().normalize();
+  let perp = new THREE.Vector3(0, 1, 0).cross(T);
+  if (perp.lengthSq() < 1e-4) perp = new THREE.Vector3(1, 0, 0).cross(T);
+  perp.normalize().multiplyScalar(6); // tube radius
+  const cP = C.clone().project(camera);
+  if (cP.z >= 1) return lastOpening;   // opening behind camera near a hard bend — reuse last good
+  const eP = C.clone().add(perp).project(camera);
+  const w = window.innerWidth, h = window.innerHeight;
+  const cx = (cP.x * 0.5 + 0.5) * w, cy = (-cP.y * 0.5 + 0.5) * h;
+  const ex = (eP.x * 0.5 + 0.5) * w, ey = (-eP.y * 0.5 + 0.5) * h;
+  return (lastOpening = { cx, cy, r: Math.hypot(ex - cx, ey - cy) });
+}
 
-    function Mouse(evnt){
-      y = (ns||n6)?evnt.pageY+4 - window.pageYOffset:event.y+4;
-      x = (ns||n6)?evnt.pageX+1:event.x+1;
+// invert the camera's scroll→curve easing (see frame()) so we can ask "at what
+// scroll position is the camera at curve fraction tc?". This lets the emerge
+// trigger ride along WITH the bend instead of firing at a fixed scroll value.
+function pAtCurve(tc) {
+  if (tc <= 0.92) {
+    return clamp01((tc - 0.001) / (0.92 - 0.001) * PHASES.tunnelOut);
+  }
+  const frac = clamp01((tc - 0.92) / (0.998 - 0.92));
+  const lateP = 1 - Math.sqrt(Math.max(0, 1 - frac));
+  return PHASES.tunnelOut + lateP * (PHASES.tunnelEnd - PHASES.tunnelOut);
+}
+
+function updateEmerge(p) {
+  // ===========================================================
+  // SINGLE CONTINUOUS REVEAL (replaces the 3-step tier system).
+  // One uniform starfield, revealed by a soft circular mask that
+  // is CENTRED on the screen and grows smoothly with scroll:
+  //   • starts at a small radius (revealR0) right after the bend,
+  //     once we're looking down the barrel (align safety gate)
+  //   • grows continuously from revealStartP → revealFullP, where
+  //     it reaches fullscreen (default: just before the tube exit)
+  // The starfield carries straight on into the outro with no steps.
+  // ===========================================================
+  const endPt = curve.getPointAt(0.999);           // the very end (camera never reaches it)
+  const toEnd = endPt.clone().sub(camera.position);
+  const distEnd = toEnd.length();
+  toEnd.normalize();
+  const fwd = new THREE.Vector3();
+  camera.getWorldDirection(fwd);
+  const alignRaw = fwd.dot(toEnd);                  // 1 = looking straight at the end
+  alignSmooth += (alignRaw - alignSmooth) * 0.15;   // low-pass to kill wave/roll jitter
+
+  // align safety gate: 0 while the sharp bend hides the opening → 1 once we're
+  // looking down the barrel. Keeps the field from bleeding mid-bend.
+  const gate = smoothstep(clamp01((alignSmooth - TEST.revealAlign) / 0.18));
+
+  // continuous scroll-driven growth: 0 at revealStartP → 1 at revealFullP
+  const span = Math.max(0.001, TEST.revealFullP - TEST.revealStartP);
+  const growth = smoothstep(clamp01((p - TEST.revealStartP) / span));
+
+  // Once the reveal has begun opening, LATCH it open — when the camera flies out
+  // past the mouth (Option B) the align dot-product flips negative, which would
+  // otherwise slam the gate shut and kill the starfield. growth only rises after
+  // revealStartP (well past the bend), so latching here can't cause early bleed.
+  const effGate = Math.max(gate, growth);
+
+  // where does the opening project on screen RIGHT NOW?
+  const op = projectTubeOpening();
+
+  // in-view factor: 0 while the projected opening is still off-screen or hugging
+  // an edge (mid-bend), 1 once it is comfortably inside the viewport. This makes
+  // the reveal appear exactly WHEN and WHERE the opening swings into view —
+  // instead of fading in early near the top of the screen and dragging down.
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let inView = 0;
+  if (op) {
+    const ex = Math.min(op.cx, vw - op.cx) / vw;   // 0 at the screen edge → 0.5 at centre
+    const ey = Math.min(op.cy, vh - op.cy) / vh;
+    inView = smoothstep(clamp01(Math.min(ex, ey) / 0.18));
+  }
+
+  // overall presence: can't appear before we're aligned/started, NOR before the
+  // opening is actually in view
+  const present = effGate * inView * smoothstep(clamp01((p - (TEST.revealStartP - 0.02)) / 0.02));
+
+  if (present <= 0.001) {
+    vaporEl.style.opacity = 0;
+    vaporEl.style.visibility = 'hidden';
+    vaporEl.style.webkitMaskImage = 'none';
+    vaporEl.style.maskImage = 'none';
+    vaporEl.style.zIndex = '';
+    vaporGlowEl.style.opacity = 0;
+    vaporContentEl.style.transform = '';
+    vaporContentEl.style.opacity = '';
+    outroActive = false;
+    revealFocalValid = false;
+    window._openSmoothX = null;  // re-seed the opening smoother on next entry
+    window._openSmoothY = null;
+    document.getElementById('showcase-canvas').style.transform = ''; // clear any 'shift' offset
+    if (diagEl) diagEl.textContent = `– · ${distEnd.toFixed(0)} · ${alignSmooth.toFixed(2)}`;
+    return;
+  }
+
+  vaporEl.style.visibility = 'visible';
+
+  const wasActive = outroActive;
+  outroActive = true;
+  if (!wasActive) StarfieldEffect.setup();
+
+  if (diagEl) diagEl.textContent = `${growth.toFixed(2)} · ${distEnd.toFixed(0)} · ${alignSmooth.toFixed(2)}`;
+
+  // layer fades in with the align gate so the small starting circle eases in
+  vaporEl.style.opacity = present.toFixed(3);
+
+  const w = vw, h = vh;
+  const cx = w / 2, cy = h / 2;
+
+  // LIVE anchor on the projected opening. While the field is still young/faint
+  // (present < 0.5) the anchor is GLUED to the opening — zero smoothing lag, so
+  // the rays sit exactly inside the mouth from their very first visible frame
+  // and move WITH it, never trailing behind. Once established, an adaptive
+  // low-pass takes over: gentle (0.15) at rest to kill roll-wobble jitter, but
+  // automatically faster when the opening genuinely moves, so it can't drag.
+  let maskCx = cx, maskCy = cy;
+  if (op) {
+    if (window._openSmoothX == null) {
+      window._openSmoothX = op.cx;
+      window._openSmoothY = op.cy;
     }
+    const dxm = op.cx - window._openSmoothX, dym = op.cy - window._openSmoothY;
+    const err = Math.hypot(dxm, dym);
+    const k = (present < 0.5) ? 1 : Math.min(1, 0.15 + err / 240);
+    window._openSmoothX += dxm * k;
+    window._openSmoothY += dym * k;
+    const recentre = smoothstep(clamp01(growth / 0.4)); // 0 → 1 across the FIRST 40% of growth
+    maskCx = lerp(window._openSmoothX, cx, recentre);
+    maskCy = lerp(window._openSmoothY, cy, recentre);
+  }
 
-    (ns)?window.onMouseMove=Mouse:document.onmousemove=Mouse;
+  const coverR = Math.hypot(w, h) * 0.5 + 4;          // radius that fully covers the viewport
+  const rad = lerp(TEST.revealR0, coverR, growth);    // small → fullscreen, continuous
 
-    function animate(){
-      o=(ns||n6)?window.pageYOffset:0;
-      if (ie)con.style.top=document.body.scrollTop + 'px';
+  // share the centre out so the starfield rays can emanate from it too
+  revealFocalX = maskCx;
+  revealFocalY = maskCy;
+  revealFocalValid = true;
 
-      for (i = 0; i < n; i++){
-        var temp1 = eval(d+a+"dots"+i+n6r+s);
-        randcolours = colours[Math.floor(Math.random()*colours.length)];
-        (ns)?temp1.bgColor = randcolours:temp1.background = randcolours; 
+  // REMOVED: screen-blend and z-index flipping. Canvas is now transparent,
+  // starfield shows through, and #vapor stays at z:0 forever (tube at z:1).
+  // No blending needed, no z-juggling needed.
 
-        if (i < n-1){
-          var temp2 = eval(d+a+"dots"+(i+1)+n6r+s);
-          temp1.top = parseInt(temp2.top) + 'px';
-          temp1.left = parseInt(temp2.left) + 'px';
-        } 
-        else{
-          temp1.top = y+o + 'px';
-          temp1.left = x + 'px';
-        }
-      }
-      setTimeout("animate()",10);
+  const feather = Math.max(24, rad * 0.3);
+  const inner = Math.max(0, rad - feather);
+  const mask = `radial-gradient(circle ${rad.toFixed(1)}px at ${maskCx.toFixed(1)}px ${maskCy.toFixed(1)}px, #000 ${inner.toFixed(1)}px, rgba(0,0,0,0) ${rad.toFixed(1)}px)`;
+  vaporEl.style.webkitMaskImage = mask;
+  vaporEl.style.maskImage = mask;
+
+  // content rises on SCROLL — there's a stretch of pure full-screen starfield
+  // before the text/cards come up. `content rise @` controls where that begins.
+  const cStart = TEST.contentRise;
+  const cEnd = Math.min(1.0, cStart + 0.03);
+  const ce = smoothstep(clamp01((p - cStart) / (cEnd - cStart)));
+  vaporContentEl.style.transform = `translateY(${(1 - ce) * 110}px)`;
+  vaporContentEl.style.opacity = ce;
+
+  if (TEST.emergeGlow) {
+    vaporGlowEl.style.opacity = ((0.10 + 0.28 * growth) * (1 - ce)).toFixed(3);
+  } else {
+    vaporGlowEl.style.opacity = 0;
+  }
+}
+
+// ============================================================
+// SCROLL DRIVER
+// ============================================================
+let scrollP = 0, smoothP = 0;
+function updateScroll() {
+  const max = document.body.scrollHeight - window.innerHeight;
+  scrollP = Math.max(0, Math.min(1, window.scrollY / max));
+}
+window.addEventListener('scroll', updateScroll, { passive: true });
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  updateScroll();
+  resizeOutroCanvas();
+});
+updateScroll();
+resizeOutroCanvas();
+
+const cards = document.querySelectorAll('.chapter');
+let lastActive = -1;
+function setActiveChapter(i) {
+  cards.forEach((c, k) => c.classList.toggle('in', k === i));
+  document.getElementById('pCur').textContent = `CH ${String(i+1).padStart(2,"0")}`;
+}
+function activeChapterFromP(p) {
+  if (p > PHASES.tunnelEnd) return -1;
+  let best = 0, bd = Infinity;
+  CHAPTERS.forEach((ch, i) => {
+    const d = Math.abs(ch.at - p);
+    if (d < bd) { bd = d; best = i; }
+  });
+  if (bd > 0.08) return -1; // too far from any chapter — fade out (no lingering last card)
+  return best;
+}
+
+const pFill = document.getElementById('pFill');
+const pPct = document.getElementById('pPct');
+const openingDotEl = document.getElementById('openingDot');
+const openingRingEl = document.getElementById('openingRing');
+
+function frame() {
+  if (TEST.scrub.active) {
+    if (TEST.scrub.playing) {
+      TEST.scrub.value += 0.0008;
+      if (TEST.scrub.value > 1) TEST.scrub.value = 0.78;
+      if (scrubSlider) scrubSlider.value = TEST.scrub.value;
+      if (scrubVal) scrubVal.textContent = TEST.scrub.value.toFixed(3);
     }
+    smoothP = TEST.scrub.value;
+  } else {
+    smoothP += (scrollP - smoothP) * 0.07;
+  }
+  const p = smoothP;
+  updateLayers(p);
 
-    animate();
+  // tunnel camera: ease into the deep end so by tunnelEnd the camera is at
+  // curve t ≈ 0.998 — we've travelled the full tube. Fog density takes over
+  // ahead, leaving only the immediate tube walls visible at the screen borders.
+  let tCurve;
+  if (p < PHASES.tunnelOut) {
+    tCurve = lerp(0.001, 0.92, p / PHASES.tunnelOut);
+  } else if (p < PHASES.tunnelEnd) {
+    const lateP = clamp01((p - PHASES.tunnelOut) / (PHASES.tunnelEnd - PHASES.tunnelOut));
+    tCurve = lerp(0.92, 0.998, 1 - Math.pow(1 - lateP, 2));
+  } else {
+    // OPTION B: past tunnelEnd, keep pushing the camera FORWARD past the mouth
+    // so it physically flies out of the tube (tCurve climbs above 1.0).
+    const outP = clamp01((p - PHASES.tunnelEnd) / (1 - PHASES.tunnelEnd));
+    tCurve = 0.998 + outP * 0.15; // up to ~1.148 → well past the exit rim
+  }
 
-    window.onload=function() { if (document.getElementById) {
-      var i, rats, rlef, rdow;
-      for (var i=0; i<sparkles; i++) {
-        var rats=createDiv(3, 3);
-        rats.style.visibility="hidden";
-        rats.style.zIndex="999";
-        document.body.appendChild(tiny[i]=rats);
-        starv[i]=0;
-        tinyv[i]=0;
-        var rats=createDiv(5, 5);
-        rats.style.backgroundColor="transparent";
-        rats.style.visibility="hidden";
-        rats.style.zIndex="999";
-        var rlef=createDiv(1, 5);
-        var rdow=createDiv(5, 1);
-        rats.appendChild(rlef);
-        rats.appendChild(rdow);
-        rlef.style.top="2px";
-        rlef.style.left="0px";
-        rdow.style.top="0px";
-        rdow.style.left="2px";
-        document.body.appendChild(star[i]=rats);
-      }
-      set_width();
-      sparkle();
-    }}
+  if (tCurve <= 0.999) {
+    const pos = curve.getPointAt(Math.min(0.999, tCurve));
+    const look = curve.getPointAt(Math.min(0.999, tCurve + 0.008));
+    camera.position.copy(pos);
+    camera.lookAt(look);
+  } else {
+    // flying out: extrapolate straight along the exit tangent
+    const endPt = curve.getPointAt(0.999);
+    const endTan = curve.getTangentAt(0.999).normalize();
+    const distPastEnd = (tCurve - 0.999) * 220; // world units past the mouth
+    camera.position.copy(endPt).addScaledVector(endTan, distPastEnd);
+    camera.lookAt(endPt.clone().addScaledVector(endTan, distPastEnd + 20));
+  }
+  lastTCurve = tCurve;
+  const roll = Math.sin(performance.now() * 0.0002) * 0.04;
+  camera.up.set(Math.sin(roll), Math.cos(roll), 0);
 
-    function sparkle() {
-      var c;
-      if (Math.abs(x-ox)>1 || Math.abs(y-oy)>1) {
-        ox=x;
-        oy=y;
-        for (c=0; c<sparkles; c++) if (!starv[c]) {
-          star[c].style.left=(starx[c]=x)+"px";
-          star[c].style.top=(stary[c]=y+1)+"px";
-          star[c].style.clip="rect(0px, 5px, 5px, 0px)";
-          star[c].childNodes[0].style.backgroundColor=star[c].childNodes[1].style.backgroundColor=(colour=="random")?newColour():colour;
-          star[c].style.visibility="visible";
-          starv[c]=50;
-          break;
-        }
-      }
-      for (c=0; c<sparkles; c++) {
-        if (starv[c]) update_star(c);
-        if (tinyv[c]) update_tiny(c);
-      }
-      setTimeout("sparkle()", 40);
+  const now = performance.now();
+  rings.forEach((m, idx) => {
+    const f = now * 0.0012 + idx * 1.3;
+    m.material.opacity = 0.55 + Math.sin(f) * 0.3;
+    m.scale.setScalar(1 + Math.sin(f) * 0.04);
+  });
+
+  const arr = ptGeo.attributes.position.array;
+  for (let i = 0; i < ptCount; i++) {
+    ptSeeds[i*3] += 0.00018 * TEST.particleDir;
+    if (ptSeeds[i*3] > 1) ptSeeds[i*3] -= 1;
+    if (ptSeeds[i*3] < 0) ptSeeds[i*3] += 1;
+    const tt = ptSeeds[i*3];
+    const a = ptSeeds[i*3+1] + now * 0.0001;
+    const r = ptSeeds[i*3+2];
+    const pp = curve.getPointAt(tt);
+    arr[i*3]   = pp.x + Math.cos(a) * r;
+    arr[i*3+1] = pp.y + Math.sin(a) * r;
+    arr[i*3+2] = pp.z;
+  }
+  ptGeo.attributes.position.needsUpdate = true;
+
+  const ac = activeChapterFromP(p);
+  if (ac >= 0 && ac !== lastActive) {
+    setActiveChapter(ac); lastActive = ac;
+  } else if (ac < 0 && lastActive !== -1) {
+    cards.forEach(c => c.classList.remove('in'));
+    lastActive = -1;
+  }
+
+  pFill.style.width = (p * 100).toFixed(1) + '%';
+  pPct.textContent = Math.round(p * 100) + '%';
+
+  renderer.render(scene, camera);
+
+  // DEBUG — visualize projectTubeOpening(): fat magenta dot at the projected
+  // centre of the opening ahead, thin ring showing its apparent radius.
+  // (called AFTER render so the camera matrices are fresh for this frame)
+  if (TEST.showOpening) {
+    const op = projectTubeOpening();
+    if (op) {
+      openingDotEl.style.transform = `translate(${op.cx.toFixed(1)}px, ${op.cy.toFixed(1)}px)`;
+      const dd = Math.max(2, op.r * 2);
+      openingRingEl.style.width = dd.toFixed(1) + 'px';
+      openingRingEl.style.height = dd.toFixed(1) + 'px';
+      openingRingEl.style.transform = `translate(${(op.cx - dd / 2).toFixed(1)}px, ${(op.cy - dd / 2).toFixed(1)}px)`;
     }
+  }
 
-    function update_star(i) {
-      if (--starv[i]==25) star[i].style.clip="rect(1px, 4px, 4px, 1px)";
-      if (starv[i]) {
-        stary[i]+=1+Math.random()*3;
-        starx[i]+=(i%5-2)/5;
-        if (stary[i]<shigh+sdown) {
-          star[i].style.top=stary[i]+"px";
-          star[i].style.left=starx[i]+"px";
-        }
-        else {
-          star[i].style.visibility="hidden";
-          starv[i]=0;
-          return;
-        }
-      }
-      else {
-        tinyv[i]=50;
-        tiny[i].style.top=(tinyy[i]=stary[i])+"px";
-        tiny[i].style.left=(tinyx[i]=starx[i])+"px";
-        tiny[i].style.width="2px";
-        tiny[i].style.height="2px";
-        tiny[i].style.backgroundColor=star[i].childNodes[0].style.backgroundColor;
-        star[i].style.visibility="hidden";
-        tiny[i].style.visibility="visible"
-      }
-    }
+  if (outroActive) {
+    StarfieldEffect.draw();
+  }
 
-    function update_tiny(i) {
-      if (--tinyv[i]==25) {
-        tiny[i].style.width="1px";
-        tiny[i].style.height="1px";
-      }
-      if (tinyv[i]) {
-        tinyy[i]+=1+Math.random()*3;
-        tinyx[i]+=(i%5-2)/5;
-        if (tinyy[i]<shigh+sdown) {
-          tiny[i].style.top=tinyy[i]+"px";
-          tiny[i].style.left=tinyx[i]+"px";
-        }
-        else {
-          tiny[i].style.visibility="hidden";
-          tinyv[i]=0;
-          return;
-        }
-      }
-      else tiny[i].style.visibility="hidden";
-    }
+  requestAnimationFrame(frame);
+}
+frame();
 
-    document.onmousemove=mouse;
-    function mouse(e) {
-      if (e) {
-        y=e.pageY;
-        x=e.pageX;
-      }
-      else {
-        set_scroll();
-        y=event.y+sdown;
-        x=event.x+sleft;
-      }
-    }
+// Kick off autoplay intro on load
+window.addEventListener('load', () => {
+  setTimeout(runAutoplay, 200);
+});
 
-    window.onscroll=set_scroll;
-    function set_scroll() {
-      if (typeof(self.pageYOffset)=='number') {
-        sdown=self.pageYOffset;
-        sleft=self.pageXOffset;
-      }
-      else if (document.body && (document.body.scrollTop || document.body.scrollLeft)) {
-        sdown=document.body.scrollTop;
-        sleft=document.body.scrollLeft;
-      }
-      else if (document.documentElement && (document.documentElement.scrollTop || document.documentElement.scrollLeft)) {
-        sleft=document.documentElement.scrollLeft;
-        sdown=document.documentElement.scrollTop;
-      }
-      else {
-        sdown=0;
-        sleft=0;
-      }
-    }
+// ============================================================
+// TEST CONTROLS WIRING
+// ============================================================
+(function () {
+  const velSlider = document.getElementById('velSlider');
+  const velVal = document.getElementById('velVal');
+  velSlider.addEventListener('input', () => {
+    TEST.starVelocity = +velSlider.value;
+    velVal.textContent = velSlider.value;
+  });
 
-    window.onresize=set_width;
-    function set_width() {
-      var sw_min=999999;
-      var sh_min=999999;
-      if (document.documentElement && document.documentElement.clientWidth) {
-        if (document.documentElement.clientWidth>0) sw_min=document.documentElement.clientWidth;
-        if (document.documentElement.clientHeight>0) sh_min=document.documentElement.clientHeight;
-      }
-      if (typeof(self.innerWidth)=='number' && self.innerWidth) {
-        if (self.innerWidth>0 && self.innerWidth<sw_min) sw_min=self.innerWidth;
-        if (self.innerHeight>0 && self.innerHeight<sh_min) sh_min=self.innerHeight;
-      }
-      if (document.body.clientWidth) {
-        if (document.body.clientWidth>0 && document.body.clientWidth<sw_min) sw_min=document.body.clientWidth;
-        if (document.body.clientHeight>0 && document.body.clientHeight<sh_min) sh_min=document.body.clientHeight;
-      }
-      if (sw_min==999999 || sh_min==999999) {
-        sw_min=800;
-        sh_min=600;
-      }
-      swide=sw_min;
-      shigh=sh_min;
-    }
+  function wireSeg(segId, key) {
+    const seg = document.getElementById(segId);
+    seg.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        seg.querySelectorAll('button').forEach((b) => b.classList.remove('on'));
+        btn.classList.add('on');
+        TEST[key] = +btn.dataset.dir;
+      });
+    });
+  }
+  wireSeg('starSeg', 'starDir');
+  wireSeg('partSeg', 'particleDir');
 
-    function createDiv(height, width) {
-      var div=document.createElement("div");
-      div.style.position="absolute";
-      div.style.height=height+"px";
-      div.style.width=width+"px";
-      div.style.overflow="hidden";
-      return (div);
-    }
+  // ---- transition: skip / scrub / emerge / glow ----
+  document.getElementById('skipBtn').addEventListener('click', skipIntro);
 
-    function newColour() {
-      var c=new Array();
-      c[0]=255;
-      c[1]=Math.floor(Math.random()*256);
-      c[2]=Math.floor(Math.random()*(256-c[1]/2));
-      c.sort(function(){return (0.5 - Math.random());});
-      return ("rgb("+c[0]+", "+c[1]+", "+c[2]+")");
-    }
-  </script>
+  scrubSlider = document.getElementById('scrubSlider');
+  scrubVal = document.getElementById('scrubVal');
+  const playBtn = document.getElementById('playBtn');
+  scrubSlider.addEventListener('input', () => {
+    TEST.scrub.value = +scrubSlider.value;
+    scrubVal.textContent = (+scrubSlider.value).toFixed(3);
+    if (!TEST.scrub.active) { TEST.scrub.active = true; skipIntro(); }
+  });
+  playBtn.addEventListener('click', () => {
+    if (!TEST.scrub.active) { TEST.scrub.active = true; skipIntro(); TEST.scrub.value = +scrubSlider.value; }
+    TEST.scrub.playing = !TEST.scrub.playing;
+    playBtn.classList.toggle('on', TEST.scrub.playing);
+    playBtn.textContent = TEST.scrub.playing ? '\u2759\u2759' : '\u25b6';
+  });
 
-  <script>
-    (function emojiCursor() {
-      var possibleEmoji = ["🔨", "⚒️", "🪚","🚧"];
-      var width = window.innerWidth;
-      var height = window.innerHeight;
-      var cursor = {x: width/2, y: width/2};
-      var particles = [];
-      var lastSpawnTime = 0;
-      var spawnDelay = 150; // milliseconds between emoji spawns
+  const emergeBtn = document.getElementById('emergeBtn');
+  emergeBtn.addEventListener('click', () => {
+    TEST.emerge = !TEST.emerge;
+    emergeBtn.classList.toggle('on', TEST.emerge);
+  });
+  const glowBtn = document.getElementById('glowBtn');
+  const glowK = glowBtn.querySelector('.k');
+  glowBtn.addEventListener('click', () => {
+    TEST.emergeGlow = !TEST.emergeGlow;
+    glowBtn.classList.toggle('on', TEST.emergeGlow);
+    glowK.textContent = TEST.emergeGlow ? 'on' : 'off';
+  });
 
-      function init() {
-        bindEvents();
-        loop();
-      }
+  function wireSub(id, key) {
+    const btn = document.getElementById(id);
+    const k = btn.querySelector('.k');
+    btn.addEventListener('click', () => {
+      TEST[key] = !TEST[key];
+      btn.classList.toggle('on', TEST[key]);
+      k.textContent = TEST[key] ? 'on' : 'off';
+    });
+  }
+  wireSub('behindBtn', 'emergeBehind');
 
-      // Bind events that are needed
-      function bindEvents() {
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('touchmove', onTouchMove);
-        document.addEventListener('touchstart', onTouchMove);
-        
-        window.addEventListener('resize', onWindowResize);
-      }
+  const outroBgBtn = document.getElementById('outroBgBtn');
+  const outroBgK = outroBgBtn.querySelector('.k');
+  function applyOutroBg() {
+    vaporEl.style.background = TEST.outroBgMatch ? '#070c0a' : '#000';
+    outroBgBtn.classList.toggle('on', TEST.outroBgMatch);
+    outroBgK.textContent = TEST.outroBgMatch ? 'tube' : 'black';
+  }
+  outroBgBtn.addEventListener('click', () => {
+    TEST.outroBgMatch = !TEST.outroBgMatch;
+    applyOutroBg();
+  });
+  applyOutroBg();
 
-      function onWindowResize(e) {
-        width = window.innerWidth;
-        height = window.innerHeight;
-      }
+  const r0Slider = document.getElementById('r0Slider');
+  const r0Val = document.getElementById('r0Val');
+  r0Slider.addEventListener('input', () => {
+    TEST.revealR0 = +r0Slider.value;
+    r0Val.textContent = r0Slider.value;
+  });
 
-      function onTouchMove(e) {
-        if( e.touches.length > 0 ) {
-          for( var i = 0; i < e.touches.length; i++ ) {
-            addParticle( e.touches[i].clientX, e.touches[i].clientY, possibleEmoji[Math.floor(Math.random()*possibleEmoji.length)]);
-          }
-        }
-      }
+  const startSlider = document.getElementById('startSlider');
+  const startVal = document.getElementById('startVal');
+  startSlider.addEventListener('input', () => {
+    TEST.revealStartP = +startSlider.value;
+    startVal.textContent = (+startSlider.value).toFixed(3);
+  });
+  const fullSlider = document.getElementById('fullSlider');
+  const fullVal = document.getElementById('fullVal');
+  fullSlider.addEventListener('input', () => {
+    TEST.revealFullP = +fullSlider.value;
+    fullVal.textContent = (+fullSlider.value).toFixed(3);
+  });
+  const contentSlider = document.getElementById('contentSlider');
+  const contentVal = document.getElementById('contentVal');
+  contentSlider.addEventListener('input', () => {
+    TEST.contentRise = +contentSlider.value;
+    contentVal.textContent = (+contentSlider.value).toFixed(3);
+  });
 
-      function onMouseMove(e) {    
-        cursor.x = e.clientX;
-        cursor.y = e.clientY;
-        
-        // Throttle emoji spawning
-        var now = Date.now();
-        if (now - lastSpawnTime >= spawnDelay) {
-          addParticle( cursor.x, cursor.y, possibleEmoji[Math.floor(Math.random()*possibleEmoji.length)]);
-          lastSpawnTime = now;
-        }
-      }
+  const focalYSlider = document.getElementById('focalYSlider');
+  const focalYVal = document.getElementById('focalYVal');
+  focalYSlider.addEventListener('input', () => {
+    TEST.starFocalY = +focalYSlider.value;
+    focalYVal.textContent = (+focalYSlider.value).toFixed(2);
+  });
 
-      function addParticle(x, y, character) {
-        var particle = new Particle();
-        particle.init(x, y, character);
-        particles.push(particle);
-      }
+  const bendSlider = document.getElementById('bendSlider');
+  const bendVal = document.getElementById('bendVal');
+  bendSlider.addEventListener('input', () => {
+    TEST.endBend = +bendSlider.value;
+    bendVal.textContent = bendSlider.value;
+    requestTubeRebuild();
+  });
+  const bendStartSlider = document.getElementById('bendStartSlider');
+  const bendStartVal = document.getElementById('bendStartVal');
+  bendStartSlider.addEventListener('input', () => {
+    TEST.endBendStart = +bendStartSlider.value;
+    bendStartVal.textContent = (+bendStartSlider.value).toFixed(2);
+    requestTubeRebuild();
+  });
+  const bendAngSlider = document.getElementById('bendAngSlider');
+  const bendAngVal = document.getElementById('bendAngVal');
+  bendAngSlider.addEventListener('input', () => {
+    TEST.bendAngle = +bendAngSlider.value;
+    bendAngVal.textContent = bendAngSlider.value;
+    requestTubeRebuild();
+  });
 
-      function updateParticles() {
-        // Updated
-        for( var i = 0; i < particles.length; i++ ) {
-          particles[i].update();
-        }
-        
-        // Remove dead particles
-        for( var i = particles.length -1; i >= 0; i-- ) {
-          if( particles[i].lifeSpan < 0 ) {
-            particles[i].die();
-            particles.splice(i, 1);
-          }
-        }
-      }
+  // Fog toggle — turn the 3D depth-fog on/off to see what it does
+  const fogBtn = document.getElementById('fogBtn');
+  const fogK = fogBtn.querySelector('.k');
+  fogBtn.addEventListener('click', () => {
+    fogEnabled = !fogEnabled;
+    scene.fog = fogEnabled ? fogDefault : null;
+    fogBtn.classList.toggle('on', fogEnabled);
+    fogK.textContent = fogEnabled ? 'on' : 'off';
+  });
 
-      function loop() {
-        requestAnimationFrame(loop);
-        updateParticles();
-      }
+  // Rays-vs-opening mode — 4-way: follow / fade / shift / fixed
+  const rayModeSeg = document.getElementById('rayModeSeg');
+  rayModeSeg.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      rayModeSeg.querySelectorAll('button').forEach((b) => b.classList.remove('on'));
+      btn.classList.add('on');
+      TEST.rayMode = btn.dataset.mode;
+      document.getElementById('showcase-canvas').style.transform = ''; // clear any shift
+    });
+  });
 
-      /**
-       * Particles
-       */
-      
-      function Particle() {
-        this.lifeSpan = 120; //ms
-        this.initialStyles ={
-          "position": "absolute",
-          "display": "block",
-          "pointerEvents": "none",
-          "z-index": "10000000",
-          "fontSize": "16px",
-          "will-change": "transform"
-        };
-        // Init, and set properties
-        this.init = function(x, y, character) {
-          this.velocity = {
-            x:  (Math.random() < 0.5 ? -1 : 1) * (Math.random() / 2),
-            y: 1
-          };
-          
-          this.position = {x: x , y: y -250};
-          this.element = document.createElement('span');
-          this.element.innerHTML = character;
-          applyProperties(this.element, this.initialStyles);
-          this.update();
-          
-          document.body.appendChild(this.element);
-        };
-        
-        this.update = function() {
-          this.position.x += this.velocity.x;
-          this.position.y += this.velocity.y;
-          this.lifeSpan--;
-          
-          this.element.style.transform = "translate3d(" + this.position.x + "px," + this.position.y + "px,0) scale(" + (this.lifeSpan / 120) + ")";
-        }
-        
-        this.die = function() {
-          this.element.parentNode.removeChild(this.element);
-        }
-      }
+  // 'fade' mode tuning sliders
+  function wireFadeSlider(sliderId, valId, key, digits) {
+    const s = document.getElementById(sliderId);
+    const v = document.getElementById(valId);
+    s.addEventListener('input', () => {
+      TEST[key] = +s.value;
+      v.textContent = (+s.value).toFixed(digits);
+    });
+  }
+  wireFadeSlider('fadeBaseSlider', 'fadeBaseVal', 'fadeBase', 2);
+  wireFadeSlider('fadeGainSlider', 'fadeGainVal', 'fadeGain', 3);
+  wireFadeSlider('fadeMaxSlider', 'fadeMaxVal', 'fadeMax', 2);
 
-      /**
-       * Utils
-       */
-      
-      // Applies css `properties` to an element.
-      function applyProperties( target, properties ) {
-        for( var key in properties ) {
-          target.style[ key ] = properties[ key ];
-        }
-      }
+  // Debug: projected tube-opening marker (magenta dot + ring) — hidden by default
+  const markerBtn = document.getElementById('markerBtn');
+  const markerK = markerBtn.querySelector('.k');
+  markerBtn.addEventListener('click', () => {
+    TEST.showOpening = !TEST.showOpening;
+    markerBtn.classList.toggle('on', TEST.showOpening);
+    markerK.textContent = TEST.showOpening ? 'on' : 'off';
+    openingDotEl.style.display = TEST.showOpening ? 'block' : 'none';
+    openingRingEl.style.display = TEST.showOpening ? 'block' : 'none';
+  });
 
-      init();
-    })();
-  </script>
-
-  <script>
-    // oneko.js: https://github.com/adryd325/oneko.js
-    (function oneko() {
-      const isReducedMotion =
-        window.matchMedia(`(prefers-reduced-motion: reduce)`) === true ||
-        window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
-
-      if (isReducedMotion) return;
-
-      const nekoEl = document.createElement("div");
-      let persistPosition = true;
-
-      let nekoPosX = 32;
-      let nekoPosY = 32;
-      
-      let mousePosX = 0;
-      let mousePosY = 0;
-
-      let frameCount = 0;
-      let idleTime = 0;
-      let idleAnimation = null;
-      let idleAnimationFrame = 0;
-
-      const nekoSpeed = 10;
-      const spriteSets = {
-        idle: [[-3, -3]],
-        alert: [[-7, -3]],
-        scratchSelf: [
-          [-5, 0],
-          [-6, 0],
-          [-7, 0],
-        ],
-        scratchWallN: [
-          [0, 0],
-          [0, -1],
-        ],
-        scratchWallS: [
-          [-7, -1],
-          [-6, -2],
-        ],
-        scratchWallE: [
-          [-2, -2],
-          [-2, -3],
-        ],
-        scratchWallW: [
-          [-4, 0],
-          [-4, -1],
-        ],
-        tired: [[-3, -2]],
-        sleeping: [
-          [-2, 0],
-          [-2, -1],
-        ],
-        N: [
-          [-1, -2],
-          [-1, -3],
-        ],
-        NE: [
-          [0, -2],
-          [0, -3],
-        ],
-        E: [
-          [-3, 0],
-          [-3, -1],
-        ],
-        SE: [
-          [-5, -1],
-          [-5, -2],
-        ],
-        S: [
-          [-6, -3],
-          [-7, -2],
-        ],
-        SW: [
-          [-5, -3],
-          [-6, -1],
-        ],
-        W: [
-          [-4, -2],
-          [-4, -3],
-        ],
-        NW: [
-          [-1, 0],
-          [-1, -1],
-        ],
-      };
-
-      function init() {
-        let nekoFile = "/oneko.gif";
-        
-        if (persistPosition) {
-          let storedNeko = JSON.parse(window.localStorage.getItem("oneko"));
-          if (storedNeko !== null) {
-            nekoPosX = storedNeko.nekoPosX;
-            nekoPosY = storedNeko.nekoPosY;
-            mousePosX = storedNeko.mousePosX;
-            mousePosY = storedNeko.mousePosY;
-            frameCount = storedNeko.frameCount;
-            idleTime = storedNeko.idleTime;
-            idleAnimation = storedNeko.idleAnimation;
-            idleAnimationFrame = storedNeko.idleAnimationFrame;
-            nekoEl.style.backgroundPosition = storedNeko.bgPos;
-          }
-        }
-      
-        nekoEl.id = "oneko";
-        nekoEl.ariaHidden = true;
-        nekoEl.style.width = "32px";
-        nekoEl.style.height = "32px";
-        nekoEl.style.position = "fixed";
-        nekoEl.style.pointerEvents = "none";
-        nekoEl.style.imageRendering = "pixelated";
-        nekoEl.style.left = `${nekoPosX - 16}px`;
-        nekoEl.style.top = `${nekoPosY - 16}px`;
-        nekoEl.style.zIndex = 2147483647;
-
-        nekoEl.style.backgroundImage = `url(${nekoFile})`;
-        
-        document.body.appendChild(nekoEl);
-
-        document.addEventListener("mousemove", function (event) {
-          mousePosX = event.clientX;
-          mousePosY = event.clientY;
-        });
-        
-        if (persistPosition) {
-          window.addEventListener("beforeunload", function (event) {
-            window.localStorage.setItem("oneko", JSON.stringify({
-              nekoPosX: nekoPosX,
-              nekoPosY: nekoPosY,
-              mousePosX: mousePosX,
-              mousePosY: mousePosY,
-              frameCount: frameCount,
-              idleTime: idleTime,
-              idleAnimation: idleAnimation,
-              idleAnimationFrame: idleAnimationFrame,
-              bgPos: nekoEl.style.backgroundPosition
-            }));
-          });
-        }
-        
-        window.requestAnimationFrame(onAnimationFrame);
-      }
-
-      let lastFrameTimestamp;
-
-      function onAnimationFrame(timestamp) {
-        // Stops execution if the neko element is removed from DOM
-        if (!nekoEl.isConnected) {
-          return;
-        }
-        if (!lastFrameTimestamp) {
-          lastFrameTimestamp = timestamp;
-        }
-        if (timestamp - lastFrameTimestamp > 100) {
-          lastFrameTimestamp = timestamp;
-          frame();
-        }
-        window.requestAnimationFrame(onAnimationFrame);
-      }
-
-      function setSprite(name, frame) {
-        const sprite = spriteSets[name][frame % spriteSets[name].length];
-        nekoEl.style.backgroundPosition = `${sprite[0] * 32}px ${sprite[1] * 32}px`;
-      }
-
-      function resetIdleAnimation() {
-        idleAnimation = null;
-        idleAnimationFrame = 0;
-      }
-
-      function idle() {
-        idleTime += 1;
-
-        // every ~ 20 seconds
-        if (
-          idleTime > 10 &&
-          Math.floor(Math.random() * 200) == 0 &&
-          idleAnimation == null
-        ) {
-          let avalibleIdleAnimations = ["sleeping", "scratchSelf"];
-          if (nekoPosX < 32) {
-            avalibleIdleAnimations.push("scratchWallW");
-          }
-          if (nekoPosY < 32) {
-            avalibleIdleAnimations.push("scratchWallN");
-          }
-          if (nekoPosX > window.innerWidth - 32) {
-            avalibleIdleAnimations.push("scratchWallE");
-          }
-          if (nekoPosY > window.innerHeight - 32) {
-            avalibleIdleAnimations.push("scratchWallS");
-          }
-          idleAnimation =
-            avalibleIdleAnimations[
-              Math.floor(Math.random() * avalibleIdleAnimations.length)
-            ];
-        }
-
-        switch (idleAnimation) {
-          case "sleeping":
-            if (idleAnimationFrame < 8) {
-              setSprite("tired", 0);
-              break;
-            }
-            setSprite("sleeping", Math.floor(idleAnimationFrame / 4));
-            if (idleAnimationFrame > 192) {
-              resetIdleAnimation();
-            }
-            break;
-          case "scratchWallN":
-          case "scratchWallS":
-          case "scratchWallE":
-          case "scratchWallW":
-          case "scratchSelf":
-            setSprite(idleAnimation, idleAnimationFrame);
-            if (idleAnimationFrame > 9) {
-              resetIdleAnimation();
-            }
-            break;
-          default:
-            setSprite("idle", 0);
-            return;
-        }
-        idleAnimationFrame += 1;
-      }
-
-      function frame() {
-        frameCount += 1;
-        const diffX = nekoPosX - mousePosX;
-        const diffY = nekoPosY - mousePosY;
-        const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
-
-        if (distance < nekoSpeed || distance < 48) {
-          idle();
-          return;
-        }
-
-        idleAnimation = null;
-        idleAnimationFrame = 0;
-
-        if (idleTime > 1) {
-          setSprite("alert", 0);
-          // count down after being alerted before moving
-          idleTime = Math.min(idleTime, 7);
-          idleTime -= 1;
-          return;
-        }
-
-        let direction;
-        direction = diffY / distance > 0.5 ? "N" : "";
-        direction += diffY / distance < -0.5 ? "S" : "";
-        direction += diffX / distance > 0.5 ? "W" : "";
-        direction += diffX / distance < -0.5 ? "E" : "";
-        setSprite(direction, frameCount);
-
-        nekoPosX -= (diffX / distance) * nekoSpeed;
-        nekoPosY -= (diffY / distance) * nekoSpeed;
-
-        nekoPosX = Math.min(Math.max(16, nekoPosX), window.innerWidth - 16);
-        nekoPosY = Math.min(Math.max(16, nekoPosY), window.innerHeight - 16);
-
-        nekoEl.style.left = `${nekoPosX - 16}px`;
-        nekoEl.style.top = `${nekoPosY - 16}px`;
-      }
-
-      init();
-    })();
-  </script>
+  const panel = document.getElementById('testPanel');
+  const tpToggle = document.getElementById('tpToggle');
+  tpToggle.addEventListener('click', () => {
+    panel.classList.toggle('collapsed');
+    tpToggle.textContent = panel.classList.contains('collapsed') ? '+' : '\u2013';
+  });
+})();
+</script>
 </body>
-
 </html>

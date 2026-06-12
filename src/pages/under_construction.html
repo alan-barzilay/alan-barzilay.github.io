@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('/constru.gif');
+      background-repeat: repeat;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    img {
+      height: 100vh;
+      width: auto;
+      max-width: 60%;
+      object-fit: cover;
+    }
+
+    h1 {
+      margin-left: 5vw;
+      color: fuchsia;
+      background-color: black;
+      z-index: 1;
+    }
+
+    /* Ensure oneko cat is visible and doesn't interfere */
+    #oneko {
+      pointer-events: none;
+      z-index: 10000;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background"></div>
+  <h1>Landing page em construção</h1>
+  <img src="/paulin2.jpg" alt="Paulin">
+
+  <script>
+    var colour="random"; // "random" can be replaced with any valid colour ie: "red"...
+    var sparkles=100;// increase of decrease for number of sparkles falling
+
+    var x=ox=400;
+    var y=oy=300;
+    var swide=800;
+    var shigh=600;
+    var sleft=sdown=0;
+    var tiny=new Array();
+    var star=new Array();
+    var starv=new Array();
+    var starx=new Array();
+    var stary=new Array();
+    var tinyx=new Array();
+    var tinyy=new Array();
+    var tinyv=new Array();
+
+    colours=new Array('#ff0000','#00ff00','#ffffff','#ff00ff','#ffa500','#ffff00','#00ff00','#ffffff','ff00ff')
+
+    n = 10;
+    y = 0;
+    x = 0;
+    n6=(document.getElementById&&!document.all);
+    ns=(document.layers);
+    ie=(document.all);
+    d=(ns||ie)?'document.':'document.getElementById("';
+    a=(ns||n6)?'':'all.';
+    n6r=(n6)?'")':'';
+    s=(ns)?'':'.style';
+
+    if (ns){
+      for (i = 0; i < n; i++)
+        document.write('<layer name="dots'+i+'" top=0 left=0 width='+i/2+' height='+i/2+' bgcolor=#ff0000></layer>');
+    }
+
+    if (ie)
+      document.write('<div id="con" style="position:absolute;top:0px;left:0px"><div style="position:relative">');
+
+    if (ie||n6){
+      for (i = 0; i < n; i++)
+        document.write('<div id="dots'+i+'" style="position:absolute;top:0px;left:0px;width:'+i/2+'px;height:'+i/2+'px;background:#ff0000;font-size:'+i/2+'"></div>');
+    }
+
+    if (ie)
+      document.write('</div></div>');
+    (ns||n6)?window.captureEvents(Event.MOUSEMOVE):0;
+
+    function Mouse(evnt){
+      y = (ns||n6)?evnt.pageY+4 - window.pageYOffset:event.y+4;
+      x = (ns||n6)?evnt.pageX+1:event.x+1;
+    }
+
+    (ns)?window.onMouseMove=Mouse:document.onmousemove=Mouse;
+
+    function animate(){
+      o=(ns||n6)?window.pageYOffset:0;
+      if (ie)con.style.top=document.body.scrollTop + 'px';
+
+      for (i = 0; i < n; i++){
+        var temp1 = eval(d+a+"dots"+i+n6r+s);
+        randcolours = colours[Math.floor(Math.random()*colours.length)];
+        (ns)?temp1.bgColor = randcolours:temp1.background = randcolours; 
+
+        if (i < n-1){
+          var temp2 = eval(d+a+"dots"+(i+1)+n6r+s);
+          temp1.top = parseInt(temp2.top) + 'px';
+          temp1.left = parseInt(temp2.left) + 'px';
+        } 
+        else{
+          temp1.top = y+o + 'px';
+          temp1.left = x + 'px';
+        }
+      }
+      setTimeout("animate()",10);
+    }
+
+    animate();
+
+    window.onload=function() { if (document.getElementById) {
+      var i, rats, rlef, rdow;
+      for (var i=0; i<sparkles; i++) {
+        var rats=createDiv(3, 3);
+        rats.style.visibility="hidden";
+        rats.style.zIndex="999";
+        document.body.appendChild(tiny[i]=rats);
+        starv[i]=0;
+        tinyv[i]=0;
+        var rats=createDiv(5, 5);
+        rats.style.backgroundColor="transparent";
+        rats.style.visibility="hidden";
+        rats.style.zIndex="999";
+        var rlef=createDiv(1, 5);
+        var rdow=createDiv(5, 1);
+        rats.appendChild(rlef);
+        rats.appendChild(rdow);
+        rlef.style.top="2px";
+        rlef.style.left="0px";
+        rdow.style.top="0px";
+        rdow.style.left="2px";
+        document.body.appendChild(star[i]=rats);
+      }
+      set_width();
+      sparkle();
+    }}
+
+    function sparkle() {
+      var c;
+      if (Math.abs(x-ox)>1 || Math.abs(y-oy)>1) {
+        ox=x;
+        oy=y;
+        for (c=0; c<sparkles; c++) if (!starv[c]) {
+          star[c].style.left=(starx[c]=x)+"px";
+          star[c].style.top=(stary[c]=y+1)+"px";
+          star[c].style.clip="rect(0px, 5px, 5px, 0px)";
+          star[c].childNodes[0].style.backgroundColor=star[c].childNodes[1].style.backgroundColor=(colour=="random")?newColour():colour;
+          star[c].style.visibility="visible";
+          starv[c]=50;
+          break;
+        }
+      }
+      for (c=0; c<sparkles; c++) {
+        if (starv[c]) update_star(c);
+        if (tinyv[c]) update_tiny(c);
+      }
+      setTimeout("sparkle()", 40);
+    }
+
+    function update_star(i) {
+      if (--starv[i]==25) star[i].style.clip="rect(1px, 4px, 4px, 1px)";
+      if (starv[i]) {
+        stary[i]+=1+Math.random()*3;
+        starx[i]+=(i%5-2)/5;
+        if (stary[i]<shigh+sdown) {
+          star[i].style.top=stary[i]+"px";
+          star[i].style.left=starx[i]+"px";
+        }
+        else {
+          star[i].style.visibility="hidden";
+          starv[i]=0;
+          return;
+        }
+      }
+      else {
+        tinyv[i]=50;
+        tiny[i].style.top=(tinyy[i]=stary[i])+"px";
+        tiny[i].style.left=(tinyx[i]=starx[i])+"px";
+        tiny[i].style.width="2px";
+        tiny[i].style.height="2px";
+        tiny[i].style.backgroundColor=star[i].childNodes[0].style.backgroundColor;
+        star[i].style.visibility="hidden";
+        tiny[i].style.visibility="visible"
+      }
+    }
+
+    function update_tiny(i) {
+      if (--tinyv[i]==25) {
+        tiny[i].style.width="1px";
+        tiny[i].style.height="1px";
+      }
+      if (tinyv[i]) {
+        tinyy[i]+=1+Math.random()*3;
+        tinyx[i]+=(i%5-2)/5;
+        if (tinyy[i]<shigh+sdown) {
+          tiny[i].style.top=tinyy[i]+"px";
+          tiny[i].style.left=tinyx[i]+"px";
+        }
+        else {
+          tiny[i].style.visibility="hidden";
+          tinyv[i]=0;
+          return;
+        }
+      }
+      else tiny[i].style.visibility="hidden";
+    }
+
+    document.onmousemove=mouse;
+    function mouse(e) {
+      if (e) {
+        y=e.pageY;
+        x=e.pageX;
+      }
+      else {
+        set_scroll();
+        y=event.y+sdown;
+        x=event.x+sleft;
+      }
+    }
+
+    window.onscroll=set_scroll;
+    function set_scroll() {
+      if (typeof(self.pageYOffset)=='number') {
+        sdown=self.pageYOffset;
+        sleft=self.pageXOffset;
+      }
+      else if (document.body && (document.body.scrollTop || document.body.scrollLeft)) {
+        sdown=document.body.scrollTop;
+        sleft=document.body.scrollLeft;
+      }
+      else if (document.documentElement && (document.documentElement.scrollTop || document.documentElement.scrollLeft)) {
+        sleft=document.documentElement.scrollLeft;
+        sdown=document.documentElement.scrollTop;
+      }
+      else {
+        sdown=0;
+        sleft=0;
+      }
+    }
+
+    window.onresize=set_width;
+    function set_width() {
+      var sw_min=999999;
+      var sh_min=999999;
+      if (document.documentElement && document.documentElement.clientWidth) {
+        if (document.documentElement.clientWidth>0) sw_min=document.documentElement.clientWidth;
+        if (document.documentElement.clientHeight>0) sh_min=document.documentElement.clientHeight;
+      }
+      if (typeof(self.innerWidth)=='number' && self.innerWidth) {
+        if (self.innerWidth>0 && self.innerWidth<sw_min) sw_min=self.innerWidth;
+        if (self.innerHeight>0 && self.innerHeight<sh_min) sh_min=self.innerHeight;
+      }
+      if (document.body.clientWidth) {
+        if (document.body.clientWidth>0 && document.body.clientWidth<sw_min) sw_min=document.body.clientWidth;
+        if (document.body.clientHeight>0 && document.body.clientHeight<sh_min) sh_min=document.body.clientHeight;
+      }
+      if (sw_min==999999 || sh_min==999999) {
+        sw_min=800;
+        sh_min=600;
+      }
+      swide=sw_min;
+      shigh=sh_min;
+    }
+
+    function createDiv(height, width) {
+      var div=document.createElement("div");
+      div.style.position="absolute";
+      div.style.height=height+"px";
+      div.style.width=width+"px";
+      div.style.overflow="hidden";
+      return (div);
+    }
+
+    function newColour() {
+      var c=new Array();
+      c[0]=255;
+      c[1]=Math.floor(Math.random()*256);
+      c[2]=Math.floor(Math.random()*(256-c[1]/2));
+      c.sort(function(){return (0.5 - Math.random());});
+      return ("rgb("+c[0]+", "+c[1]+", "+c[2]+")");
+    }
+  </script>
+
+  <script>
+    (function emojiCursor() {
+      var possibleEmoji = ["🔨", "⚒️", "🪚","🚧"];
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      var cursor = {x: width/2, y: width/2};
+      var particles = [];
+      var lastSpawnTime = 0;
+      var spawnDelay = 150; // milliseconds between emoji spawns
+
+      function init() {
+        bindEvents();
+        loop();
+      }
+
+      // Bind events that are needed
+      function bindEvents() {
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('touchmove', onTouchMove);
+        document.addEventListener('touchstart', onTouchMove);
+        
+        window.addEventListener('resize', onWindowResize);
+      }
+
+      function onWindowResize(e) {
+        width = window.innerWidth;
+        height = window.innerHeight;
+      }
+
+      function onTouchMove(e) {
+        if( e.touches.length > 0 ) {
+          for( var i = 0; i < e.touches.length; i++ ) {
+            addParticle( e.touches[i].clientX, e.touches[i].clientY, possibleEmoji[Math.floor(Math.random()*possibleEmoji.length)]);
+          }
+        }
+      }
+
+      function onMouseMove(e) {    
+        cursor.x = e.clientX;
+        cursor.y = e.clientY;
+        
+        // Throttle emoji spawning
+        var now = Date.now();
+        if (now - lastSpawnTime >= spawnDelay) {
+          addParticle( cursor.x, cursor.y, possibleEmoji[Math.floor(Math.random()*possibleEmoji.length)]);
+          lastSpawnTime = now;
+        }
+      }
+
+      function addParticle(x, y, character) {
+        var particle = new Particle();
+        particle.init(x, y, character);
+        particles.push(particle);
+      }
+
+      function updateParticles() {
+        // Updated
+        for( var i = 0; i < particles.length; i++ ) {
+          particles[i].update();
+        }
+        
+        // Remove dead particles
+        for( var i = particles.length -1; i >= 0; i-- ) {
+          if( particles[i].lifeSpan < 0 ) {
+            particles[i].die();
+            particles.splice(i, 1);
+          }
+        }
+      }
+
+      function loop() {
+        requestAnimationFrame(loop);
+        updateParticles();
+      }
+
+      /**
+       * Particles
+       */
+      
+      function Particle() {
+        this.lifeSpan = 120; //ms
+        this.initialStyles ={
+          "position": "absolute",
+          "display": "block",
+          "pointerEvents": "none",
+          "z-index": "10000000",
+          "fontSize": "16px",
+          "will-change": "transform"
+        };
+        // Init, and set properties
+        this.init = function(x, y, character) {
+          this.velocity = {
+            x:  (Math.random() < 0.5 ? -1 : 1) * (Math.random() / 2),
+            y: 1
+          };
+          
+          this.position = {x: x , y: y -250};
+          this.element = document.createElement('span');
+          this.element.innerHTML = character;
+          applyProperties(this.element, this.initialStyles);
+          this.update();
+          
+          document.body.appendChild(this.element);
+        };
+        
+        this.update = function() {
+          this.position.x += this.velocity.x;
+          this.position.y += this.velocity.y;
+          this.lifeSpan--;
+          
+          this.element.style.transform = "translate3d(" + this.position.x + "px," + this.position.y + "px,0) scale(" + (this.lifeSpan / 120) + ")";
+        }
+        
+        this.die = function() {
+          this.element.parentNode.removeChild(this.element);
+        }
+      }
+
+      /**
+       * Utils
+       */
+      
+      // Applies css `properties` to an element.
+      function applyProperties( target, properties ) {
+        for( var key in properties ) {
+          target.style[ key ] = properties[ key ];
+        }
+      }
+
+      init();
+    })();
+  </script>
+
+  <script>
+    // oneko.js: https://github.com/adryd325/oneko.js
+    (function oneko() {
+      const isReducedMotion =
+        window.matchMedia(`(prefers-reduced-motion: reduce)`) === true ||
+        window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+
+      if (isReducedMotion) return;
+
+      const nekoEl = document.createElement("div");
+      let persistPosition = true;
+
+      let nekoPosX = 32;
+      let nekoPosY = 32;
+      
+      let mousePosX = 0;
+      let mousePosY = 0;
+
+      let frameCount = 0;
+      let idleTime = 0;
+      let idleAnimation = null;
+      let idleAnimationFrame = 0;
+
+      const nekoSpeed = 10;
+      const spriteSets = {
+        idle: [[-3, -3]],
+        alert: [[-7, -3]],
+        scratchSelf: [
+          [-5, 0],
+          [-6, 0],
+          [-7, 0],
+        ],
+        scratchWallN: [
+          [0, 0],
+          [0, -1],
+        ],
+        scratchWallS: [
+          [-7, -1],
+          [-6, -2],
+        ],
+        scratchWallE: [
+          [-2, -2],
+          [-2, -3],
+        ],
+        scratchWallW: [
+          [-4, 0],
+          [-4, -1],
+        ],
+        tired: [[-3, -2]],
+        sleeping: [
+          [-2, 0],
+          [-2, -1],
+        ],
+        N: [
+          [-1, -2],
+          [-1, -3],
+        ],
+        NE: [
+          [0, -2],
+          [0, -3],
+        ],
+        E: [
+          [-3, 0],
+          [-3, -1],
+        ],
+        SE: [
+          [-5, -1],
+          [-5, -2],
+        ],
+        S: [
+          [-6, -3],
+          [-7, -2],
+        ],
+        SW: [
+          [-5, -3],
+          [-6, -1],
+        ],
+        W: [
+          [-4, -2],
+          [-4, -3],
+        ],
+        NW: [
+          [-1, 0],
+          [-1, -1],
+        ],
+      };
+
+      function init() {
+        let nekoFile = "/oneko.gif";
+        
+        if (persistPosition) {
+          let storedNeko = JSON.parse(window.localStorage.getItem("oneko"));
+          if (storedNeko !== null) {
+            nekoPosX = storedNeko.nekoPosX;
+            nekoPosY = storedNeko.nekoPosY;
+            mousePosX = storedNeko.mousePosX;
+            mousePosY = storedNeko.mousePosY;
+            frameCount = storedNeko.frameCount;
+            idleTime = storedNeko.idleTime;
+            idleAnimation = storedNeko.idleAnimation;
+            idleAnimationFrame = storedNeko.idleAnimationFrame;
+            nekoEl.style.backgroundPosition = storedNeko.bgPos;
+          }
+        }
+      
+        nekoEl.id = "oneko";
+        nekoEl.ariaHidden = true;
+        nekoEl.style.width = "32px";
+        nekoEl.style.height = "32px";
+        nekoEl.style.position = "fixed";
+        nekoEl.style.pointerEvents = "none";
+        nekoEl.style.imageRendering = "pixelated";
+        nekoEl.style.left = `${nekoPosX - 16}px`;
+        nekoEl.style.top = `${nekoPosY - 16}px`;
+        nekoEl.style.zIndex = 2147483647;
+
+        nekoEl.style.backgroundImage = `url(${nekoFile})`;
+        
+        document.body.appendChild(nekoEl);
+
+        document.addEventListener("mousemove", function (event) {
+          mousePosX = event.clientX;
+          mousePosY = event.clientY;
+        });
+        
+        if (persistPosition) {
+          window.addEventListener("beforeunload", function (event) {
+            window.localStorage.setItem("oneko", JSON.stringify({
+              nekoPosX: nekoPosX,
+              nekoPosY: nekoPosY,
+              mousePosX: mousePosX,
+              mousePosY: mousePosY,
+              frameCount: frameCount,
+              idleTime: idleTime,
+              idleAnimation: idleAnimation,
+              idleAnimationFrame: idleAnimationFrame,
+              bgPos: nekoEl.style.backgroundPosition
+            }));
+          });
+        }
+        
+        window.requestAnimationFrame(onAnimationFrame);
+      }
+
+      let lastFrameTimestamp;
+
+      function onAnimationFrame(timestamp) {
+        // Stops execution if the neko element is removed from DOM
+        if (!nekoEl.isConnected) {
+          return;
+        }
+        if (!lastFrameTimestamp) {
+          lastFrameTimestamp = timestamp;
+        }
+        if (timestamp - lastFrameTimestamp > 100) {
+          lastFrameTimestamp = timestamp;
+          frame();
+        }
+        window.requestAnimationFrame(onAnimationFrame);
+      }
+
+      function setSprite(name, frame) {
+        const sprite = spriteSets[name][frame % spriteSets[name].length];
+        nekoEl.style.backgroundPosition = `${sprite[0] * 32}px ${sprite[1] * 32}px`;
+      }
+
+      function resetIdleAnimation() {
+        idleAnimation = null;
+        idleAnimationFrame = 0;
+      }
+
+      function idle() {
+        idleTime += 1;
+
+        // every ~ 20 seconds
+        if (
+          idleTime > 10 &&
+          Math.floor(Math.random() * 200) == 0 &&
+          idleAnimation == null
+        ) {
+          let avalibleIdleAnimations = ["sleeping", "scratchSelf"];
+          if (nekoPosX < 32) {
+            avalibleIdleAnimations.push("scratchWallW");
+          }
+          if (nekoPosY < 32) {
+            avalibleIdleAnimations.push("scratchWallN");
+          }
+          if (nekoPosX > window.innerWidth - 32) {
+            avalibleIdleAnimations.push("scratchWallE");
+          }
+          if (nekoPosY > window.innerHeight - 32) {
+            avalibleIdleAnimations.push("scratchWallS");
+          }
+          idleAnimation =
+            avalibleIdleAnimations[
+              Math.floor(Math.random() * avalibleIdleAnimations.length)
+            ];
+        }
+
+        switch (idleAnimation) {
+          case "sleeping":
+            if (idleAnimationFrame < 8) {
+              setSprite("tired", 0);
+              break;
+            }
+            setSprite("sleeping", Math.floor(idleAnimationFrame / 4));
+            if (idleAnimationFrame > 192) {
+              resetIdleAnimation();
+            }
+            break;
+          case "scratchWallN":
+          case "scratchWallS":
+          case "scratchWallE":
+          case "scratchWallW":
+          case "scratchSelf":
+            setSprite(idleAnimation, idleAnimationFrame);
+            if (idleAnimationFrame > 9) {
+              resetIdleAnimation();
+            }
+            break;
+          default:
+            setSprite("idle", 0);
+            return;
+        }
+        idleAnimationFrame += 1;
+      }
+
+      function frame() {
+        frameCount += 1;
+        const diffX = nekoPosX - mousePosX;
+        const diffY = nekoPosY - mousePosY;
+        const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
+
+        if (distance < nekoSpeed || distance < 48) {
+          idle();
+          return;
+        }
+
+        idleAnimation = null;
+        idleAnimationFrame = 0;
+
+        if (idleTime > 1) {
+          setSprite("alert", 0);
+          // count down after being alerted before moving
+          idleTime = Math.min(idleTime, 7);
+          idleTime -= 1;
+          return;
+        }
+
+        let direction;
+        direction = diffY / distance > 0.5 ? "N" : "";
+        direction += diffY / distance < -0.5 ? "S" : "";
+        direction += diffX / distance > 0.5 ? "W" : "";
+        direction += diffX / distance < -0.5 ? "E" : "";
+        setSprite(direction, frameCount);
+
+        nekoPosX -= (diffX / distance) * nekoSpeed;
+        nekoPosY -= (diffY / distance) * nekoSpeed;
+
+        nekoPosX = Math.min(Math.max(16, nekoPosX), window.innerWidth - 16);
+        nekoPosY = Math.min(Math.max(16, nekoPosY), window.innerHeight - 16);
+
+        nekoEl.style.left = `${nekoPosX - 16}px`;
+        nekoEl.style.top = `${nekoPosY - 16}px`;
+      }
+
+      init();
+    })();
+  </script>
+</body>
+
+</html>
