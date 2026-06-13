@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Alan Barzilay — Starfield Test (scroll reveal · 2026-06-09)</title>
+<title>Alan Barzilay — Starfield Test (scroll reveal · optimized · 2026-06-12)</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
 <style>
@@ -648,6 +648,15 @@ body.v-green-theme .vapor-content .eyebrow { color: var(--phos-bright); text-sha
 
 <script>
 // ============================================================
+// PERF PASS (2026-06-12) — identical behaviour, leaner hot path:
+//   · zero per-frame Vector3 allocations (scratch vectors + cached curve end)
+//   · particle positions read from a curve LUT (was: 700 arc-length searches/frame)
+//   · DOM nodes / 2D context looked up once, not per frame
+//   · style/text writes skipped when the value hasn't changed
+//   · boot-log typing appends incrementally (was: full innerHTML re-parse per char)
+//   · scroll handler no longer reads scrollHeight per event
+// ============================================================
+// ============================================================
 // PHASES — scroll only covers TUNNEL + VAPOR.
 // Boot + splash are autoplay on page load.
 // ============================================================
@@ -743,23 +752,27 @@ const splashSub  = document.getElementById('splashSub');
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function typeBootLogs() {
-  let out = "";
+  // incremental DOM: finished lines are appended once and never re-parsed;
+  // only the line currently being typed is re-rendered per keystroke.
+  // (the old version rebuilt the WHOLE log's innerHTML on every character — O(n²))
+  const doneEl = document.createElement('span');
+  const curEl = document.createElement('span');
+  bootLog.replaceChildren(doneEl, curEl);
   for (let i = 0; i < BOOT_LOGS.length; i++) {
     const [kind, msg] = BOOT_LOGS[i];
     if (!msg) {
-      out += lineToHtml(i, kind, "");
-      bootLog.innerHTML = out;
+      doneEl.insertAdjacentHTML('beforeend', lineToHtml(i, kind, ""));
       await sleep(80);
       continue;
     }
     for (let c = 0; c <= msg.length; c++) {
-      bootLog.innerHTML = out + lineToHtml(i, kind, msg, c);
+      curEl.innerHTML = lineToHtml(i, kind, msg, c);
       await sleep(2 + Math.random() * 5);
     }
-    out += lineToHtml(i, kind, msg);
+    curEl.innerHTML = '';
+    doneEl.insertAdjacentHTML('beforeend', lineToHtml(i, kind, msg));
     await sleep(30 + Math.random() * 60);
   }
-  bootLog.innerHTML = out;
 }
 
 async function runAutoplay() {
@@ -833,16 +846,20 @@ const QUALITY = { dprCap: 1.5, starScale: 1.0 };
 function effDPR() { return Math.min(window.devicePixelRatio || 1, QUALITY.dprCap); }
 window.QUALITY = QUALITY;
 
+// cached viewport size — refreshed on resize, read everywhere else (avoids
+// scattered window.innerWidth/innerHeight reads in the frame loop)
+let viewW = window.innerWidth, viewH = window.innerHeight;
+
 const tunnelCanvas = document.getElementById('tunnel-canvas');
 const renderer = new THREE.WebGLRenderer({ canvas: tunnelCanvas, antialias: true, alpha: true });
 renderer.setPixelRatio(effDPR());
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(viewW, viewH);
 renderer.setClearColor(0x000000, 0); // transparent background so starfield shows through
 
 const scene = new THREE.Scene();
 const fogDefault = new THREE.FogExp2(0x070c0a, 0.038);
 scene.fog = fogDefault;
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(60, viewW / viewH, 0.1, 1000);
 
 // Track whether fog is enabled (for toggle)
 let fogEnabled = true;
@@ -879,25 +896,48 @@ function applyEndBend(pts) {
 }
 let curve = new THREE.CatmullRomCurve3(applyEndBend(buildBasePoints()), false, 'catmullrom', 0.5);
 
+// ---- per-curve caches + scratch vectors (perf) ----
+// Everything derivable from the curve alone is computed ONCE per tube build:
+// the exit point/tangent, the opening-edge point, and a dense LUT of curve
+// samples for the particle system. The frame loop reuses these scratch
+// vectors instead of allocating new THREE.Vector3s every frame.
+const _tmpV1 = new THREE.Vector3(), _tmpV2 = new THREE.Vector3();
+const _camLook = new THREE.Vector3();
+const CURVE_LUT_N = 1024;
+const curveLUT = new Float32Array(CURVE_LUT_N * 3);
+const curveEnd = new THREE.Vector3();        // curve.getPointAt(0.999)
+const curveEndTangent = new THREE.Vector3(); // exit tangent (normalised)
+const openingEdge = new THREE.Vector3();     // curveEnd + perpendicular · tube radius
+function refreshCurveCache() {
+  for (let i = 0; i < CURVE_LUT_N; i++) {
+    curve.getPointAt(i / (CURVE_LUT_N - 1), _tmpV1);
+    curveLUT[i*3] = _tmpV1.x; curveLUT[i*3+1] = _tmpV1.y; curveLUT[i*3+2] = _tmpV1.z;
+  }
+  curve.getPointAt(0.999, curveEnd);
+  curve.getTangentAt(0.999, curveEndTangent).normalize();
+  const perp = _tmpV1.set(0, 1, 0).cross(curveEndTangent);
+  if (perp.lengthSq() < 1e-4) perp.set(1, 0, 0).cross(curveEndTangent);
+  perp.normalize().multiplyScalar(6); // tube radius
+  openingEdge.copy(curveEnd).add(perp);
+}
+
 // Green wireframes (terminal aesthetic) — rebuilt by buildTube() so the bend
-// controls can reshape the tube live.
+// controls can reshape the tube live. Materials are created ONCE and shared
+// across rebuilds (the old code created — and leaked — a fresh pair per rebuild).
+const tubeMat1 = new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
+const tubeMat2 = new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false });
 let tubeMesh1 = null, tubeMesh2 = null;
 function buildTube() {
   curve = new THREE.CatmullRomCurve3(applyEndBend(buildBasePoints()), false, 'catmullrom', 0.5);
+  refreshCurveCache();
   if (tubeMesh1) { scene.remove(tubeMesh1); tubeMesh1.geometry.dispose(); }
   if (tubeMesh2) { scene.remove(tubeMesh2); tubeMesh2.geometry.dispose(); }
   const g1 = new THREE.TubeGeometry(curve, 800, 6, 16, false);
-  tubeMesh1 = new THREE.LineSegments(
-    new THREE.WireframeGeometry(g1),
-    new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })
-  );
+  tubeMesh1 = new THREE.LineSegments(new THREE.WireframeGeometry(g1), tubeMat1);
   scene.add(tubeMesh1);
   g1.dispose();
   const g2 = new THREE.TubeGeometry(curve, 600, 6, 6, false);
-  tubeMesh2 = new THREE.LineSegments(
-    new THREE.WireframeGeometry(g2),
-    new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false })
-  );
+  tubeMesh2 = new THREE.LineSegments(new THREE.WireframeGeometry(g2), tubeMat2);
   scene.add(tubeMesh2);
   g2.dispose();
   if (typeof rings !== 'undefined' && rings.length) layoutRings();
@@ -1017,6 +1057,13 @@ scene.add(points);
 // ============================================================
 let outroActive = false;
 
+// canvas + 2D context resolved ONCE (the old draw() did two DOM lookups per frame)
+const starCanvas = document.getElementById('showcase-canvas');
+const starCtx = starCanvas.getContext('2d');
+// quantised stroke-style cache — avoids building a fresh rgba() string per star per frame
+const STAR_STROKES = [];
+for (let i = 0; i < 256; i++) STAR_STROKES.push(`rgba(184, 240, 208, ${(i / 255).toFixed(3)})`);
+
 const StarfieldEffect = {
   stars: [],
   cx: 0, cy: 0,
@@ -1034,7 +1081,7 @@ const StarfieldEffect = {
     s.y = Math.sin(ang) * r;
   },
   setup() {
-    const cv = document.getElementById('showcase-canvas');
+    const cv = starCanvas;
     const scale = cv._renderScale || 1;
     const W = cv.width / scale, H = cv.height / scale; // logical (CSS px) size
     this.cx = W / 2;
@@ -1050,8 +1097,8 @@ const StarfieldEffect = {
   },
   draw(dt) {
     dt = dt || 1; // #3 delta-time: 1.0 == one 60fps tick; >1 when frames are slow
-    const cv = document.getElementById('showcase-canvas');
-    const ctx = cv.getContext('2d');
+    const cv = starCanvas;
+    const ctx = starCtx;
     // #1 the backing store may be larger than the CSS box (DPR-aware). Work in
     // logical CSS px and let a single transform scale everything to device px.
     const scale = cv._renderScale || 1;
@@ -1091,9 +1138,14 @@ const StarfieldEffect = {
 
     const velocity = TEST.starVelocity * TEST.starDir;
 
-    this.stars.forEach(s => {
+    // plain for-loop (no per-frame closure), trail endpoints only computed for
+    // stars that survive the on-screen + alpha culls
+    const stars = this.stars, fov2 = this.fov, scx = this.cx, scy = this.cy;
+    const dz = velocity * dt;
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
       s.prevZ = s.z;
-      s.z -= velocity * dt;
+      s.z -= dz;
 
       if (s.z <= 1) {
         s.z = 800; this.respawnXY(s); s.prevZ = s.z;
@@ -1101,37 +1153,37 @@ const StarfieldEffect = {
         s.z = 1; this.respawnXY(s); s.prevZ = s.z;
       }
 
-      const px = (s.x / s.z) * this.fov + this.cx;
-      const py = (s.y / s.z) * this.fov + this.cy;
+      const px = (s.x / s.z) * fov2 + scx;
+      const py = (s.y / s.z) * fov2 + scy;
 
-      const lx = (s.x / s.prevZ) * this.fov + this.cx;
-      const ly = (s.y / s.prevZ) * this.fov + this.cy;
-
-      if (px < 0 || px > W || py < 0 || py > H) return;
+      if (px < 0 || px > W || py < 0 || py > H) continue;
 
       const alpha = 1 - (s.z / 800);
-      if (alpha <= 0.01) return;
-      ctx.strokeStyle = `rgba(184, 240, 208, ${alpha})`;
+      if (alpha <= 0.01) continue;
+
+      const lx = (s.x / s.prevZ) * fov2 + scx;
+      const ly = (s.y / s.prevZ) * fov2 + scy;
+
+      ctx.strokeStyle = STAR_STROKES[(alpha * 255) | 0];
       ctx.lineWidth = Math.min(2.5, 1.2 + alpha);
       ctx.beginPath();
       ctx.moveTo(lx, ly);
       ctx.lineTo(px, py);
       ctx.stroke();
-    });
+    }
   }
 };
 
 function resizeOutroCanvas() {
-  const cv = document.getElementById('showcase-canvas');
-  if (!cv) return;
+  const cv = starCanvas;
   // #1 render the starfield at (clamped DPR × starScale); keep the CSS box at
   // viewport size so it still fills the screen, just at a capped resolution.
   const scale = effDPR() * QUALITY.starScale;
   cv._renderScale = scale;
-  cv.width = Math.round(window.innerWidth * scale);
-  cv.height = Math.round(window.innerHeight * scale);
-  cv.style.width = window.innerWidth + 'px';
-  cv.style.height = window.innerHeight + 'px';
+  cv.width = Math.round(viewW * scale);
+  cv.height = Math.round(viewH * scale);
+  cv.style.width = viewW + 'px';
+  cv.style.height = viewH + 'px';
 }
 
 // ============================================================
@@ -1148,13 +1200,21 @@ function smoothstep(x) { return x*x*(3 - 2*x); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
 
+const tunnelUIEl = document.getElementById('tunnel-ui');
+let lastTunnelOpacity = -1;
+let vaporHidden = true;      // mirrors the CSS initial state of #vapor (hidden)
+let lastVaporOpacity = '', lastMask = '', lastCe = -1, lastGlow = -1;
+
 function updateLayers(p) {
   // Tunnel canvas opacity: fully visible through tunnelEnd, then fade to 0 by tunnelFlash
   const tunnelOpacity = p > PHASES.tunnelEnd
     ? 1 - clamp01((p - PHASES.tunnelEnd) / (PHASES.tunnelFlash - PHASES.tunnelEnd))
     : 1;
-  tunnelCanvas.style.opacity = tunnelOpacity;
-  document.getElementById('tunnel-ui').style.opacity = tunnelOpacity;
+  if (tunnelOpacity !== lastTunnelOpacity) {   // skip redundant style writes (it's 1 for most of the scroll)
+    lastTunnelOpacity = tunnelOpacity;
+    tunnelCanvas.style.opacity = tunnelOpacity;
+    tunnelUIEl.style.opacity = tunnelOpacity;
+  }
 
   // #4 starfield emerge owns the vapor reveal across a wider range
   if (TEST.emerge) {
@@ -1164,6 +1224,7 @@ function updateLayers(p) {
 
   // Non-emerge path (fallback, rarely used now)
   if (p > PHASES.outroIn) {
+    vaporHidden = false; lastVaporOpacity = ''; lastMask = ''; lastCe = -1; lastGlow = -1;
     vaporEl.style.visibility = "visible";
     const t = clamp01((p - PHASES.outroIn) / (PHASES.outroFull - PHASES.outroIn));
     vaporEl.style.webkitMaskImage = 'none';
@@ -1179,6 +1240,7 @@ function updateLayers(p) {
       StarfieldEffect.setup();
     }
   } else {
+    vaporHidden = true; lastVaporOpacity = ''; lastMask = ''; lastCe = -1; lastGlow = -1;
     vaporEl.style.opacity = 0;
     vaporEl.style.visibility = "hidden";
     vaporEl.style.webkitMaskImage = 'none';
@@ -1198,19 +1260,14 @@ function updateLayers(p) {
 // project the tube's far opening (centre + edge) to screen, so the reveal can
 // be sized/placed to the REAL opening rather than a guessed disc.
 function projectTubeOpening() {
-  // TRUE end of the spline — by construction the centre of the exit opening
-  // (the tube is extruded along the whole curve, and applyEndBend deforms the
-  // control points BEFORE the curve is built, so this tracks the bend sliders).
-  const ahead = 0.999;
-  const C = curve.getPointAt(ahead);
-  const T = curve.getTangentAt(ahead).clone().normalize();
-  let perp = new THREE.Vector3(0, 1, 0).cross(T);
-  if (perp.lengthSq() < 1e-4) perp = new THREE.Vector3(1, 0, 0).cross(T);
-  perp.normalize().multiplyScalar(6); // tube radius
-  const cP = C.clone().project(camera);
+  // The centre + edge of the exit opening are constants per tube build — cached
+  // in refreshCurveCache() (applyEndBend deforms the control points BEFORE the
+  // curve is built, so the cache tracks the bend sliders via buildTube()).
+  // Per-frame work here is just two projections, zero allocations.
+  const cP = _tmpV1.copy(curveEnd).project(camera);
   if (cP.z >= 1) return lastOpening;   // opening behind camera near a hard bend — reuse last good
-  const eP = C.clone().add(perp).project(camera);
-  const w = window.innerWidth, h = window.innerHeight;
+  const eP = _tmpV2.copy(openingEdge).project(camera);
+  const w = viewW, h = viewH;
   const cx = (cP.x * 0.5 + 0.5) * w, cy = (-cP.y * 0.5 + 0.5) * h;
   const ex = (eP.x * 0.5 + 0.5) * w, ey = (-eP.y * 0.5 + 0.5) * h;
   return (lastOpening = { cx, cy, r: Math.hypot(ex - cx, ey - cy) });
@@ -1239,13 +1296,9 @@ function updateEmerge(p) {
   //     it reaches fullscreen (default: just before the tube exit)
   // The starfield carries straight on into the outro with no steps.
   // ===========================================================
-  const endPt = curve.getPointAt(0.999);           // the very end (camera never reaches it)
-  const toEnd = endPt.clone().sub(camera.position);
-  const distEnd = toEnd.length();
-  toEnd.normalize();
-  const fwd = new THREE.Vector3();
-  camera.getWorldDirection(fwd);
-  const alignRaw = fwd.dot(toEnd);                  // 1 = looking straight at the end
+  const toEnd = _tmpV1.copy(curveEnd).sub(camera.position).normalize(); // cached end + scratch vector — no allocations
+  camera.getWorldDirection(_tmpV2);
+  const alignRaw = _tmpV2.dot(toEnd);               // 1 = looking straight at the end
   alignSmooth += (alignRaw - alignSmooth) * 0.15;   // low-pass to kill wave/roll jitter
 
   // align safety gate: 0 while the sharp bend hides the opening → 1 once we're
@@ -1262,14 +1315,18 @@ function updateEmerge(p) {
   // revealStartP (well past the bend), so latching here can't cause early bleed.
   const effGate = Math.max(gate, growth);
 
+  // lead-in factor: 0 until just shy of revealStartP — while it is 0, presence
+  // is 0 no matter what, so we can skip projecting the opening entirely.
+  const lead = smoothstep(clamp01((p - (TEST.revealStartP - 0.02)) / 0.02));
+
   // where does the opening project on screen RIGHT NOW?
-  const op = projectTubeOpening();
+  const op = (lead > 0 && effGate > 0) ? projectTubeOpening() : null;
 
   // in-view factor: 0 while the projected opening is still off-screen or hugging
   // an edge (mid-bend), 1 once it is comfortably inside the viewport. This makes
   // the reveal appear exactly WHEN and WHERE the opening swings into view —
   // instead of fading in early near the top of the screen and dragging down.
-  const vw = window.innerWidth, vh = window.innerHeight;
+  const vw = viewW, vh = viewH;
   let inView = 0;
   if (op) {
     const ex = Math.min(op.cx, vw - op.cx) / vw;   // 0 at the screen edge → 0.5 at centre
@@ -1279,33 +1336,38 @@ function updateEmerge(p) {
 
   // overall presence: can't appear before we're aligned/started, NOR before the
   // opening is actually in view
-  const present = effGate * inView * smoothstep(clamp01((p - (TEST.revealStartP - 0.02)) / 0.02));
+  const present = effGate * inView * lead;
 
   if (present <= 0.001) {
-    vaporEl.style.opacity = 0;
-    vaporEl.style.visibility = 'hidden';
-    vaporEl.style.webkitMaskImage = 'none';
-    vaporEl.style.maskImage = 'none';
-    vaporEl.style.zIndex = '';
-    vaporGlowEl.style.opacity = 0;
-    vaporContentEl.style.transform = '';
-    vaporContentEl.style.opacity = '';
     outroActive = false;
     revealFocalValid = false;
-    window._openSmoothX = null;  // re-seed the opening smoother on next entry
-    window._openSmoothY = null;
-    document.getElementById('showcase-canvas').style.transform = ''; // clear any 'shift' offset
+    if (!vaporHidden) {           // write the hidden state ONCE, not every frame
+      vaporHidden = true;
+      vaporEl.style.opacity = 0;
+      vaporEl.style.visibility = 'hidden';
+      vaporEl.style.webkitMaskImage = 'none';
+      vaporEl.style.maskImage = 'none';
+      vaporEl.style.zIndex = '';
+      vaporGlowEl.style.opacity = 0;
+      vaporContentEl.style.transform = '';
+      vaporContentEl.style.opacity = '';
+      lastVaporOpacity = ''; lastMask = ''; lastCe = -1; lastGlow = -1;
+      window._openSmoothX = null;  // re-seed the opening smoother on next entry
+      window._openSmoothY = null;
+      starCanvas.style.transform = ''; // clear any 'shift' offset
+    }
     return;
   }
 
-  vaporEl.style.visibility = 'visible';
+  if (vaporHidden) { vaporHidden = false; vaporEl.style.visibility = 'visible'; }
 
   const wasActive = outroActive;
   outroActive = true;
   if (!wasActive) StarfieldEffect.setup();
 
   // layer fades in with the align gate so the small starting circle eases in
-  vaporEl.style.opacity = present.toFixed(3);
+  const vaporOpacity = present.toFixed(3);
+  if (vaporOpacity !== lastVaporOpacity) { lastVaporOpacity = vaporOpacity; vaporEl.style.opacity = vaporOpacity; }
 
   const w = vw, h = vh;
   const cx = w / 2, cy = h / 2;
@@ -1347,21 +1409,27 @@ function updateEmerge(p) {
   const feather = Math.max(24, rad * 0.3);
   const inner = Math.max(0, rad - feather);
   const mask = `radial-gradient(circle ${rad.toFixed(1)}px at ${maskCx.toFixed(1)}px ${maskCy.toFixed(1)}px, #000 ${inner.toFixed(1)}px, rgba(0,0,0,0) ${rad.toFixed(1)}px)`;
-  vaporEl.style.webkitMaskImage = mask;
-  vaporEl.style.maskImage = mask;
+  if (mask !== lastMask) {        // settles to a constant once fully open — skip re-writes
+    lastMask = mask;
+    vaporEl.style.webkitMaskImage = mask;
+    vaporEl.style.maskImage = mask;
+  }
 
   // content rises on SCROLL — there's a stretch of pure full-screen starfield
   // before the text/cards come up. `content rise @` controls where that begins.
   const cStart = TEST.contentRise;
   const cEnd = Math.min(1.0, cStart + 0.03);
   const ce = smoothstep(clamp01((p - cStart) / (cEnd - cStart)));
-  vaporContentEl.style.transform = `translateY(${(1 - ce) * 110}px)`;
-  vaporContentEl.style.opacity = ce;
+  if (ce !== lastCe) {            // ce sits at 0 (then 1) for long stretches — skip re-writes
+    lastCe = ce;
+    vaporContentEl.style.transform = `translateY(${(1 - ce) * 110}px)`;
+    vaporContentEl.style.opacity = ce;
+  }
 
-  if (TEST.emergeGlow) {
-    vaporGlowEl.style.opacity = ((0.10 + 0.28 * growth) * (1 - ce)).toFixed(3);
-  } else {
-    vaporGlowEl.style.opacity = 0;
+  const glow = TEST.emergeGlow ? ((0.10 + 0.28 * growth) * (1 - ce)).toFixed(3) : 0;
+  if (glow !== lastGlow) {
+    lastGlow = glow;
+    vaporGlowEl.style.opacity = glow;
   }
 }
 
@@ -1369,41 +1437,49 @@ function updateEmerge(p) {
 // SCROLL DRIVER
 // ============================================================
 let scrollP = 0, smoothP = 0;
+let scrollMax = 1;
+// scrollHeight is layout-stable here (fixed 1000vh scroller) — measure it on
+// load/resize instead of forcing a layout read on EVERY scroll event
+function updateScrollMax() { scrollMax = Math.max(1, document.body.scrollHeight - window.innerHeight); }
 function updateScroll() {
-  const max = document.body.scrollHeight - window.innerHeight;
-  scrollP = Math.max(0, Math.min(1, window.scrollY / max));
+  scrollP = Math.max(0, Math.min(1, window.scrollY / scrollMax));
 }
 window.addEventListener('scroll', updateScroll, { passive: true });
 window.addEventListener('resize', () => {
+  viewW = window.innerWidth; viewH = window.innerHeight;
   renderer.setPixelRatio(effDPR());
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth / window.innerHeight;
+  renderer.setSize(viewW, viewH);
+  camera.aspect = viewW / viewH;
   camera.updateProjectionMatrix();
+  updateScrollMax();
   updateScroll();
   resizeOutroCanvas();
 });
+updateScrollMax();
 updateScroll();
 resizeOutroCanvas();
 
 const cards = document.querySelectorAll('.chapter');
+const pCurEl = document.getElementById('pCur');
 let lastActive = -1;
 function setActiveChapter(i) {
   cards.forEach((c, k) => c.classList.toggle('in', k === i));
-  document.getElementById('pCur').textContent = `CH ${String(i+1).padStart(2,"0")}`;
+  pCurEl.textContent = `CH ${String(i+1).padStart(2,"0")}`;
 }
 function activeChapterFromP(p) {
   if (p > PHASES.tunnelEnd) return -1;
   let best = 0, bd = Infinity;
-  CHAPTERS.forEach((ch, i) => {
-    const d = Math.abs(ch.at - p);
+  for (let i = 0; i < CHAPTERS.length; i++) {
+    const d = Math.abs(CHAPTERS[i].at - p);
     if (d < bd) { bd = d; best = i; }
-  });
+  }
   if (bd > 0.08) return -1; // too far from any chapter — fade out (no lingering last card)
   return best;
 }
 
 const pFill = document.getElementById('pFill');
 const pPct = document.getElementById('pPct');
+let lastFillW = '', lastPct = -1;
 
 // Re-apply quality settings after changing QUALITY.* live from the console.
 QUALITY.apply = function () {
@@ -1433,6 +1509,8 @@ function frame(ts) {
   if (dt <= 0) dt = 1;
 
   smoothP += (scrollP - smoothP) * (1 - Math.pow(1 - 0.07, dt));
+  // snap when settled — stops sub-pixel mask/progress churn while idle
+  if (Math.abs(scrollP - smoothP) < 0.00002) smoothP = scrollP;
   const p = smoothP;
   updateLayers(p);
 
@@ -1458,41 +1536,45 @@ function frame(ts) {
   }
 
   if (tCurve <= 0.999) {
-    const pos = curve.getPointAt(Math.min(0.999, tCurve));
-    const look = curve.getPointAt(Math.min(0.999, tCurve + 0.008));
-    camera.position.copy(pos);
-    camera.lookAt(look);
+    curve.getPointAt(Math.min(0.999, tCurve), camera.position); // write straight into camera.position
+    curve.getPointAt(Math.min(0.999, tCurve + 0.008), _camLook);
+    camera.lookAt(_camLook);
   } else {
-    // flying out: extrapolate straight along the exit tangent
-    const endPt = curve.getPointAt(0.999);
-    const endTan = curve.getTangentAt(0.999).normalize();
+    // flying out: extrapolate straight along the exit tangent (cached per build)
     const distPastEnd = (tCurve - 0.999) * 220; // world units past the mouth
-    camera.position.copy(endPt).addScaledVector(endTan, distPastEnd);
-    camera.lookAt(endPt.clone().addScaledVector(endTan, distPastEnd + 20));
+    camera.position.copy(curveEnd).addScaledVector(curveEndTangent, distPastEnd);
+    camera.lookAt(_camLook.copy(curveEnd).addScaledVector(curveEndTangent, distPastEnd + 20));
   }
   lastTCurve = tCurve;
   const roll = Math.sin(performance.now() * 0.0002) * 0.04;
   camera.up.set(Math.sin(roll), Math.cos(roll), 0);
 
   const now = performance.now();
-  rings.forEach((m, idx) => {
-    const f = now * 0.0012 + idx * 1.3;
-    m.material.opacity = 0.55 + Math.sin(f) * 0.3;
-    m.scale.setScalar(1 + Math.sin(f) * 0.04);
-  });
+  for (let ri = 0; ri < rings.length; ri++) {
+    const sf = Math.sin(now * 0.0012 + ri * 1.3);
+    rings[ri].material.opacity = 0.55 + sf * 0.3;
+    rings[ri].scale.setScalar(1 + sf * 0.04);
+  }
 
+  // particles ride the precomputed curve LUT — two array reads + a lerp per
+  // particle, instead of an arc-length search + Vector3 allocation each (700×/frame)
   const arr = ptGeo.attributes.position.array;
+  const drift = 0.00018 * TEST.particleDir * dt;
+  const aOff = now * 0.0001;
   for (let i = 0; i < ptCount; i++) {
-    ptSeeds[i*3] += 0.00018 * TEST.particleDir * dt;
-    if (ptSeeds[i*3] > 1) ptSeeds[i*3] -= 1;
-    if (ptSeeds[i*3] < 0) ptSeeds[i*3] += 1;
-    const tt = ptSeeds[i*3];
-    const a = ptSeeds[i*3+1] + now * 0.0001;
+    let tt = ptSeeds[i*3] + drift;
+    if (tt > 1) tt -= 1; else if (tt < 0) tt += 1;
+    ptSeeds[i*3] = tt;
+    const a = ptSeeds[i*3+1] + aOff;
     const r = ptSeeds[i*3+2];
-    const pp = curve.getPointAt(tt);
-    arr[i*3]   = pp.x + Math.cos(a) * r;
-    arr[i*3+1] = pp.y + Math.sin(a) * r;
-    arr[i*3+2] = pp.z;
+    const f = tt * (CURVE_LUT_N - 1);
+    const i0 = f | 0;
+    const i1 = i0 < CURVE_LUT_N - 1 ? i0 + 1 : i0;
+    const fr = f - i0;
+    const b0 = i0 * 3, b1 = i1 * 3;
+    arr[i*3]   = curveLUT[b0]   + (curveLUT[b1]   - curveLUT[b0])   * fr + Math.cos(a) * r;
+    arr[i*3+1] = curveLUT[b0+1] + (curveLUT[b1+1] - curveLUT[b0+1]) * fr + Math.sin(a) * r;
+    arr[i*3+2] = curveLUT[b0+2] + (curveLUT[b1+2] - curveLUT[b0+2]) * fr;
   }
   ptGeo.attributes.position.needsUpdate = true;
   } // end tunnelVisible
@@ -1505,8 +1587,10 @@ function frame(ts) {
     lastActive = -1;
   }
 
-  pFill.style.width = (p * 100).toFixed(1) + '%';
-  pPct.textContent = Math.round(p * 100) + '%';
+  const fillW = (p * 100).toFixed(1) + '%';
+  if (fillW !== lastFillW) { lastFillW = fillW; pFill.style.width = fillW; }
+  const pctNow = Math.round(p * 100);
+  if (pctNow !== lastPct) { lastPct = pctNow; pPct.textContent = pctNow + '%'; }
 
   if (tunnelVisible) renderer.render(scene, camera);
 
@@ -1534,8 +1618,10 @@ function frame(ts) {
 }
 frame();
 
-// Kick off autoplay intro on load
+// Kick off autoplay intro on load (re-measure the scroll range once settled)
 window.addEventListener('load', () => {
+  updateScrollMax();
+  updateScroll();
   setTimeout(runAutoplay, 200);
 });
 
