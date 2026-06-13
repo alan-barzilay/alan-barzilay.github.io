@@ -34,6 +34,10 @@ html, body {
   background: #070c0a;
   color: #fff;
   overflow-x: hidden;
+  scrollbar-width: none; /* Hide default scrollbar in Firefox */
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none; /* Hide default scrollbar in Chrome/Safari/Opera */
 }
 html, body { scroll-behavior: auto; }
 body.locked { overflow: hidden; }
@@ -308,17 +312,32 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
   transition: opacity 0.5s ease;
 }
 .pbar.on { opacity: 1; }
-.pbar .track { height: 1px; background: rgba(255,255,255,0.18); position: relative; }
+.pbar .track {
+  height: 1px;
+  background: rgba(255,255,255,0.18);
+  position: relative;
+  cursor: pointer;
+}
+.pbar .track::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: 0;
+  right: 0;
+}
 .pbar .fill {
   position: absolute; left: 0; top: 0; height: 1px;
   background: linear-gradient(to right, var(--phos-dim), var(--phos-bright));
   width: 0%;
   box-shadow: 0 0 8px var(--phos);
+  pointer-events: none;
 }
 .pbar .pct { color: #fff; }
 .pbar .chapter-tick {
   position: absolute; width: 1px; height: 5px;
   background: rgba(255,255,255,0.45); top: -2px;
+  pointer-events: none;
 }
 
 .hint {
@@ -645,7 +664,7 @@ const PHASES = {
   tunnelIn:    0.00,
   tunnelOut:   0.85,   // camera reaches 0.92, then starts deceleration
   tunnelEnd:   0.93,   // camera reaches 0.998 (spline exit)
-  tunnelFlash: 0.95,   // escape flash: tunnel canvas opacity fades to 0
+  tunnelFlash: 0.94,   // escape flash: tunnel canvas opacity fades to 0
   outroIn:     0.94,   // outro starts fading in
   outroFull:   0.98,   // outro reaches 1.00 opacity
 };
@@ -1533,6 +1552,18 @@ window.addEventListener('resize', () => {
 updateScrollMax();
 updateScroll();
 resizeOutroCanvas();
+
+const trackEl = document.getElementById('track');
+trackEl.addEventListener('click', (e) => {
+  const rect = trackEl.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const pct = Math.max(0, Math.min(1, clickX / rect.width));
+  updateScrollMax();
+  window.scrollTo({
+    top: pct * scrollMax,
+    behavior: 'smooth'
+  });
+});
 
 const cards = document.querySelectorAll('.chapter');
 const pCurEl = document.getElementById('pCur');
