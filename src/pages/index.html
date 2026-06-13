@@ -1512,7 +1512,7 @@ function updateEmerge(p) {
   // content rises on SCROLL — there's a stretch of pure full-screen starfield
   // before the text/cards come up. `content rise @` controls where that begins.
   const cStart = TEST.contentRise;
-  const cEnd = Math.min(1.0, cStart + 0.03);
+  const cEnd = Math.min(1.0, cStart + 0.02);
   const ce = smoothstep(clamp01((p - cStart) / (cEnd - cStart)));
   if (ce !== lastCe) {            // ce sits at 0 (then 1) for long stretches — skip re-writes
     lastCe = ce;
