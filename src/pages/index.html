@@ -1072,6 +1072,32 @@ const points = new THREE.Points(ptGeo, ptMat);
 scene.add(points);
 
 // ============================================================
+// SHADER COMPILE — async (KHR_parallel_shader_compile)
+// ============================================================
+// The tube/ring/particle programs are compiled + linked on a BACKGROUND GPU
+// thread, before the first renderer.render(), rather than synchronously on
+// frame 1. Without this, that first render's link blocks the main thread for
+// ~1s — and because the loop starts at page load, that stall lands right on top
+// of the CRT boot-log typing animation, stuttering it. The tunnel canvas is
+// invisible (opacity:0) through the entire boot+splash sequence (~6s), so
+// deferring the first GL render until the programs are ready is completely
+// invisible — and by the time the splash fades to the tunnel the shaders have
+// long since finished. Net result: identical pixels, no main-thread stall.
+//
+// NOTE: these are already the lightest stock materials (Line/Mesh/Points Basic,
+// all UNLIT — no lighting/shadow code to strip), so a custom raw-GLSL rewrite
+// would buy little while risking drift in additive blending / fog / tone-map.
+// Moving the compile off-thread captures the win with zero visual risk.
+let shadersReady = false;
+if (typeof renderer.compileAsync === 'function') {
+  renderer.compileAsync(scene, camera)
+    .then(() => { shadersReady = true; })
+    .catch(() => { shadersReady = true; }); // never leave the tunnel un-rendered
+} else {
+  shadersReady = true; // older three.js: fall back to a synchronous first-render compile
+}
+
+// ============================================================
 // OUTRO — Starfield Integration
 // ============================================================
 let outroActive = false;
@@ -1664,7 +1690,9 @@ function frame(ts) {
   const pctNow = Math.round(p * 100);
   if (pctNow !== lastPct) { lastPct = pctNow; pPct.textContent = pctNow + '%'; }
 
-  if (tunnelVisible) renderer.render(scene, camera);
+  // gate the first GL render on async shader compile (see compileAsync above);
+  // once shadersReady flips true it stays true, so this is a no-op thereafter.
+  if (tunnelVisible && shadersReady) renderer.render(scene, camera);
 
   if (outroActive) {
     StarfieldEffect.draw(dt);
