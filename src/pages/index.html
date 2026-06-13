@@ -385,13 +385,7 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
   display: flex; flex-direction: column;
   align-items: center;
   gap: 32px;
-}
-.vapor-content .eyebrow {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.6em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.7);
+  pointer-events: auto;
 }
 .vapor-content h1 {
   font-family: var(--sans);
@@ -504,20 +498,6 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
 body.v-green-theme #vapor { background: var(--crt-bg); }
 body.v-green-theme .vapor-content h1 { text-shadow: 0 0 18px var(--tube-accent-glow); }
 body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight: 300; }
-body.v-green-theme .vapor-content .eyebrow { color: var(--phos-bright); text-shadow: 0 0 10px rgba(111,200,154,0.7); }
-
-.vapor-credits {
-  position: absolute;
-  bottom: 22px; left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--phos-dim);
-  z-index: 6;
-  text-transform: uppercase;
-  text-align: center;
-}
 
 /* film grain */
 .grain {
@@ -602,7 +582,6 @@ body.v-green-theme .vapor-content .eyebrow { color: var(--phos-bright); text-sha
   <div id="vaporGlow"></div>
 
   <div class="vapor-content">
-    <div class="eyebrow">a · l · a · n · — · b · a · r · z · i · l · a · y</div>
     <h1>continue <em>reading.</em></h1>
     <p class="lede">notes, experiments, longer detours. a tech blog by one specific person writing on his own website.</p>
 
@@ -644,8 +623,6 @@ body.v-green-theme .vapor-content .eyebrow { color: var(--phos-bright); text-sha
       </a>
     </div>
   </div>
-
-  <div class="vapor-credits">© 2026 · alan barzilay · built by hand</div>
 </div>
 
 <div class="grain"></div>
