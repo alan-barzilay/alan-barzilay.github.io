@@ -114,6 +114,15 @@ body.locked { overflow: hidden; }
   gap: 36px;
   opacity: 0;
 }
+.splash-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  width: 100%;
+  height: 100%;
+}
 #splash::before {
   content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
   background-image: repeating-linear-gradient(
@@ -693,6 +702,11 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
 <div class="grain"></div>
 
 <script>
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+window.scrollTo(0, 0);
+
 // ============================================================
 // PERF PASS (2026-06-12) — identical behaviour, leaner hot path:
 //   · zero per-frame Vector3 allocations (scratch vectors + cached curve end)
@@ -871,9 +885,13 @@ async function runAutoplay() {
   tunnelUI.style.transition = 'opacity 0.9s ease';
   canvas.style.opacity = '1';
   tunnelUI.style.opacity = '1';
-  splashEl.style.transition = 'opacity 0.9s ease, transform 0.9s cubic-bezier(0.22,1,0.36,1)';
-  splashEl.style.transform = 'scale(0.92)';
+  splashEl.style.transition = 'opacity 0.9s ease';
   splashEl.style.opacity = '0';
+  const splashInner = document.getElementById('splashInner');
+  if (splashInner) {
+    splashInner.style.transition = 'transform 0.9s cubic-bezier(0.22,1,0.36,1)';
+    splashInner.style.transform = 'scale(0.92)';
+  }
   await sleep(950);
   splashEl.style.visibility = 'hidden';
 
@@ -1775,6 +1793,10 @@ frame();
 
 // Kick off autoplay intro on load (re-measure the scroll range once settled)
 window.addEventListener('load', () => {
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+  window.scrollTo(0, 0);
   updateScrollMax();
   updateScroll();
   setTimeout(runAutoplay, 200);
