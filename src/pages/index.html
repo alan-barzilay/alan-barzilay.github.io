@@ -2047,7 +2047,7 @@ function updateEmerge(p) {
     maskDropped = false;
     const feather = Math.max(24, rad * 0.3);
     const inner = Math.max(0, rad - feather);
-    const mask = `radial-gradient(circle ${rad.toFixed(1)}px at ${maskCx.toFixed(1)}px ${maskCy.toFixed(1)}px, transparent 0.5px, #000 0.5px, #000 ${inner.toFixed(1)}px, rgba(0,0,0,0) ${rad.toFixed(1)}px)`;
+    const mask = `radial-gradient(circle ${rad.toFixed(1)}px at ${maskCx.toFixed(1)}px ${maskCy.toFixed(1)}px, #000 ${inner.toFixed(1)}px, rgba(0,0,0,0) ${rad.toFixed(1)}px)`;
     if (mask !== lastMask) {        // settles to a constant near full open — skip re-writes
       lastMask = mask;
       vaporEl.style.webkitMaskImage = mask;
