@@ -488,16 +488,20 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
   transform: translateX(-50%);
   z-index: 28;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.55);
+  color: #fff;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   opacity: 0;
   transition: opacity 0.4s;
   pointer-events: none;
 }
-.hint.on { opacity: 1; }
+.hint.on {
+  opacity: 1;
+  animation: hop 3s ease-in-out infinite;
+  animation-delay: 6s;
+}
 .hint::after {
   content: ""; width: 1px; height: 28px;
   background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.6));
@@ -506,6 +510,10 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
 @keyframes drop {
   0%, 100% { opacity: 0.4; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(6px); }
+}
+@keyframes hop {
+  0%, 90%, 100% { transform: translateX(-50%) translateY(0); }
+  95% { transform: translateX(-50%) translateY(-10px); }
 }
 
 /* ============================================================
@@ -1099,8 +1107,6 @@ async function runAutoplay() {
   document.getElementById('top').classList.add('on');
   document.getElementById('pbar').classList.add('on');
   document.getElementById('hint').classList.add('on');
-  // FINAL build: dev tweaks panel stays hidden (tube + bend are locked in).
-  setTimeout(() => document.getElementById('hint').classList.remove('on'), 4500);
 }
 
 // ============================================================
@@ -2078,6 +2084,10 @@ let scrollMax = 1;
 function updateScrollMax() { scrollMax = Math.max(1, document.body.scrollHeight - window.innerHeight); }
 function updateScroll() {
   scrollP = Math.max(0, Math.min(1, window.scrollY / scrollMax));
+  if (scrollP > 0) {
+    const hint = document.getElementById('hint');
+    if (hint) hint.classList.remove('on');
+  }
 }
 window.addEventListener('scroll', updateScroll, { passive: true });
 window.addEventListener('resize', () => {
