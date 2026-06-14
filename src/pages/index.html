@@ -943,6 +943,7 @@ const TEST = {
   fadeMax:  0.85,  // cap on the wipe while moving (1 = full clear each frame, no trails during motion)
 };
 let introCancelled = false;
+let introPlaying = true;
 let lastTCurve = 0;
 let lastOpening = null;
 // shared smoothed reveal centre (projected tube opening, low-passed) — drives
@@ -1058,6 +1059,7 @@ async function runAutoplay() {
   if (introCancelled) return;
 
   // 5. fade splash → tunnel
+  introPlaying = false;
   const canvas = document.getElementById('tunnel-canvas');
   const tunnelUI = document.getElementById('tunnel-ui');
   canvas.style.transition = 'opacity 0.9s ease';
@@ -2221,7 +2223,7 @@ function frame(ts) {
 
   // gate the first GL render on async shader compile (see compileAsync above);
   // once shadersReady flips true it stays true, so this is a no-op thereafter.
-  if (tunnelVisible && shadersReady) renderer.render(scene, camera);
+  if (tunnelVisible && shadersReady && !introPlaying) renderer.render(scene, camera);
 
   if (outroActive) {
     StarfieldEffect.draw(dt);
