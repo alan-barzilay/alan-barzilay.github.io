@@ -111,6 +111,24 @@ body.locked { overflow: hidden; }
   gap: 36px;
   width: 100%;
   height: 100%;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+  will-change: transform, opacity;
+}
+.glitch-out {
+  animation: terminalGlitch 0.45s steps(1) forwards;
+}
+@keyframes terminalGlitch {
+  0% { transform: scale(1) translate(0); opacity: 1; filter: none; }
+  10% { transform: scale(1) translate(-10px, 2px) skewX(5deg); opacity: 0.8; filter: hue-rotate(90deg); }
+  12% { transform: scale(1) translate(10px, -2px) skewX(-10deg); opacity: 0.9; }
+  14% { transform: scale(1) translate(0); opacity: 1; }
+  25% { transform: scale(1); opacity: 0.3; }
+  27% { transform: scale(1) translate(-15px, -5px); opacity: 0.9; }
+  30% { transform: scale(1) translate(0); opacity: 1; }
+  45% { transform: scale(0.95); opacity: 0.1; }
+  47% { transform: scale(1.05) skewX(20deg); opacity: 0.8; }
+  50% { transform: scale(1) translate(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
 }
 #splash::before {
   content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
@@ -706,26 +724,28 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
 
 <!-- ====================== SPLASH (autoplay) — phosphor logo ====================== -->
 <div class="layer" id="splash">
-  <div class="logo-wrap">
-    <!-- left trace -->
-    <div class="logo-half left" id="logoLeft">
-      <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
-        <g transform="translate(13.101604,-35.573723)">
-          <path d="M -7.9846602,67.484737 H 10.778432 c 0.3086,0 0.6001,-0.1426 0.7896,-0.3862 l 7.460031,-9.627573 h 14.680346 c 0.4473,1.7202 1.9995,3 3.8579,3 2.2056,0 4,-1.7944 4,-4 0,-2.2056 -1.7944,-4 -4,-4 -1.8584,0 -3.4106,1.2798 -3.8579,3 H 18.538763 c -0.3086,0 -0.6001,0.1426 -0.789601,0.3862 l -7.46003,9.627573 H -7.9846602 c -0.5522,0 -1,0.4478 -1,1 0,0.5522 0.4478,1 1,1 z M 37.566309,54.470964 c 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 z"/>
-        </g>
-      </svg>
+  <div class="splash-inner" id="splashInner">
+    <div class="logo-wrap">
+      <!-- left trace -->
+      <div class="logo-half left" id="logoLeft">
+        <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
+          <g transform="translate(13.101604,-35.573723)">
+            <path d="M -7.9846602,67.484737 H 10.778432 c 0.3086,0 0.6001,-0.1426 0.7896,-0.3862 l 7.460031,-9.627573 h 14.680346 c 0.4473,1.7202 1.9995,3 3.8579,3 2.2056,0 4,-1.7944 4,-4 0,-2.2056 -1.7944,-4 -4,-4 -1.8584,0 -3.4106,1.2798 -3.8579,3 H 18.538763 c -0.3086,0 -0.6001,0.1426 -0.789601,0.3862 l -7.46003,9.627573 H -7.9846602 c -0.5522,0 -1,0.4478 -1,1 0,0.5522 0.4478,1 1,1 z M 37.566309,54.470964 c 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 z"/>
+          </g>
+        </svg>
+      </div>
+      <!-- right trace -->
+      <div class="logo-half right" id="logoRight">
+        <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
+          <g transform="translate(13.101604,-35.573723)">
+            <path d="M 78.301524,57.322218 H 62.709556 l -7.25496,-14.126192 c -0.1895,-0.2436 -0.481,-0.386141 -0.7896,-0.3862 l -26.506279,-0.005 c -0.4473,-1.7202 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7944 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 26.016979,0.005 5.99956,12.512392 h -8.873732 c -0.3262,0 -0.6323,0.1592 -0.8193,0.4268 L 42.795361,68.75591 27.954427,68.76903 c -0.4473,-1.7205 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7939 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 15.361434,-0.01312 c 0.3262,-2.79e-4 0.6323,-0.1592 0.8193,-0.4268 l 7.686863,-11.006892 h 26.4795 c 0.5522,0 1,-0.4473 1,-1 0,-0.5527 -0.4478,-1 -1,-1 z M 24.300817,45.804787 c -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 z m -0.204292,25.964246 c -1.103,0 -2,-0.8975 -2,-2 0,-1.1025 0.897,-2 2,-2 1.103,0 2,0.8975 2,2 0,1.1025 -0.897,2 -2,2 z"/>
+          </g>
+        </svg>
+      </div>
     </div>
-    <!-- right trace -->
-    <div class="logo-half right" id="logoRight">
-      <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
-        <g transform="translate(13.101604,-35.573723)">
-          <path d="M 78.301524,57.322218 H 62.709556 l -7.25496,-14.126192 c -0.1895,-0.2436 -0.481,-0.386141 -0.7896,-0.3862 l -26.506279,-0.005 c -0.4473,-1.7202 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7944 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 26.016979,0.005 5.99956,12.512392 h -8.873732 c -0.3262,0 -0.6323,0.1592 -0.8193,0.4268 L 42.795361,68.75591 27.954427,68.76903 c -0.4473,-1.7205 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7939 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 15.361434,-0.01312 c 0.3262,-2.79e-4 0.6323,-0.1592 0.8193,-0.4268 l 7.686863,-11.006892 h 26.4795 c 0.5522,0 1,-0.4473 1,-1 0,-0.5527 -0.4478,-1 -1,-1 z M 24.300817,45.804787 c -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 z m -0.204292,25.964246 c -1.103,0 -2,-0.8975 -2,-2 0,-1.1025 0.897,-2 2,-2 1.103,0 2,0.8975 2,2 0,1.1025 -0.897,2 -2,2 z"/>
-        </g>
-      </svg>
-    </div>
+    <div class="splash-name" id="splashName">alan barzilay<span class="dot">.</span></div>
+    <div class="splash-sub" id="splashSub">developer · researcher · maker</div>
   </div>
-  <div class="splash-name" id="splashName">alan barzilay<span class="dot">.</span></div>
-  <div class="splash-sub" id="splashSub">developer · researcher · maker</div>
 </div>
 
 <!-- ====================== TUNNEL ====================== -->
@@ -1049,25 +1069,37 @@ async function runAutoplay() {
   await sleep(1600);
   if (introCancelled) return;
 
-  // 5. fade splash → tunnel
+  // 5. start WebGL and warm up the renderer in the background (invisible)
   introPlaying = false;
+
+  // Wait 2 frames to ensure Three.js compile/first-frame render has completed off-screen
+  await new Promise(requestAnimationFrame);
+  if (introCancelled) return;
+  await new Promise(requestAnimationFrame);
+  if (introCancelled) return;
+
+  // 6. Glitch Out splash screen inner content
   const canvas = document.getElementById('tunnel-canvas');
   const tunnelUI = document.getElementById('tunnel-ui');
-  canvas.style.transition = 'opacity 0.9s ease';
-  tunnelUI.style.transition = 'opacity 0.9s ease';
+  const splashInner = document.getElementById('splashInner');
+
+  if (splashInner) {
+    splashInner.classList.add('glitch-out');
+  }
+  await sleep(450);
+  if (introCancelled) return;
+
+  // Zero-blend hard cut to instantly reveal the canvas and chrome
+  canvas.style.transition = 'none';
+  tunnelUI.style.transition = 'none';
+  splashEl.style.transition = 'none';
+
   canvas.style.opacity = '1';
   tunnelUI.style.opacity = '1';
-  splashEl.style.transition = 'opacity 0.9s ease';
   splashEl.style.opacity = '0';
-  const splashInner = document.getElementById('splashInner');
-  if (splashInner) {
-    splashInner.style.transition = 'transform 0.9s cubic-bezier(0.22,1,0.36,1)';
-    splashInner.style.transform = 'scale(0.92)';
-  }
-  await sleep(950);
   splashEl.style.visibility = 'hidden';
 
-  // 6. unlock scroll & show chrome
+  // 7. unlock scroll & show chrome
   document.body.classList.remove('locked');
   document.getElementById('top').classList.add('on');
   document.getElementById('pbar').classList.add('on');
