@@ -58,21 +58,9 @@ body.locked { overflow: hidden; }
    BOOT PHASE (autoplay)
    ============================================================ */
 #boot {
-  background: var(--crt-bg);
+  background: transparent;
   z-index: 50;
   overflow: hidden;
-}
-#boot::before {
-  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
-  background-image: repeating-linear-gradient(
-    to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
-    rgba(0,0,0,0.18) 3px, rgba(0,0,0,0) 4px);
-}
-#boot::after {
-  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
-  background:
-    radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%),
-    radial-gradient(circle at 50% 0%, rgba(111,200,154,0.06), transparent 70%);
 }
 .boot-content {
   position: absolute; inset: 0;
@@ -113,7 +101,7 @@ body.locked { overflow: hidden; }
   justify-content: center;
   flex-direction: column;
   gap: 36px;
-  opacity: 0;
+  opacity: 1;
 }
 .splash-inner {
   display: flex;
