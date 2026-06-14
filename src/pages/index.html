@@ -162,6 +162,7 @@ body.locked { overflow: hidden; }
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.6s ease, transform 0.6s ease;
+  will-change: opacity, transform;
 }
 .splash-name.in { opacity: 1; transform: translateY(0); }
 .splash-name .dot { color: var(--phos); }
@@ -175,6 +176,7 @@ body.locked { overflow: hidden; }
   z-index: 6;
   opacity: 0;
   transition: opacity 0.5s ease 0.2s;
+  will-change: opacity;
 }
 .splash-sub.in { opacity: 1; }
 
@@ -187,6 +189,7 @@ body.locked { overflow: hidden; }
   opacity: 0;
   transform: scale(0.95);
   transition: opacity 0.5s ease 0.4s, transform 0.5s ease 0.4s;
+  will-change: opacity, transform;
 }
 .logo-wrap.in { opacity: 1; transform: scale(1); }
 
