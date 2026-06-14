@@ -4,7 +4,6 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "pnpm run clean && astro dev",
-    "record": "node make_timelapse.js",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
@@ -30,7 +29,6 @@
     "tailwindcss": "^4.1.12"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.19",
-    "puppeteer": "^24.24.0"
+    "@tailwindcss/typography": "^0.5.19"
   }
 }
