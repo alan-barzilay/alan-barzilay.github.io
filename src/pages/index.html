@@ -20,6 +20,7 @@
 
   --tube-accent: #F4B182;
   --tube-accent-glow: rgba(244, 177, 130, 0.7);
+  --circle-color: #6fc89a;
 
   /* synthwave / vapor — shared neon palette for Starfox Neon outro */
   --neon-pink:  #ff2bd6;
@@ -136,16 +137,7 @@ body.locked { overflow: hidden; }
     radial-gradient(circle at 50% 0%, rgba(111,200,154,0.06), transparent 70%);
 }
 
-.logo-wrap {
-  position: relative;
-  width: clamp(200px, 36vw, 420px);
-  aspect-ratio: 96.520073 / 42.426407;
-  z-index: 6;
-  /* glow */
-  filter:
-    drop-shadow(0 0 8px rgba(111,200,154,0.6))
-    drop-shadow(0 0 22px rgba(111,200,154,0.35));
-}
+
 .logo-half {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -197,6 +189,18 @@ body.locked { overflow: hidden; }
   transition: opacity 0.5s ease 0.2s;
 }
 .splash-sub.in { opacity: 1; }
+
+.logo-wrap {
+  position: relative;
+  width: clamp(200px, 36vw, 420px);
+  aspect-ratio: 96.520073 / 42.426407;
+  z-index: 6;
+  filter: drop-shadow(0 0 8px rgba(111,200,154,0.6)) drop-shadow(0 0 22px rgba(111,200,154,0.35));
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.5s ease 0.4s, transform 0.5s ease 0.4s;
+}
+.logo-wrap.in { opacity: 1; transform: scale(1); }
 
 /* ============================================================
    TUNNEL PHASE — scroll-driven
@@ -320,7 +324,118 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
 .top.on { opacity: 1; }
 .top * { pointer-events: auto; }
 .top .brand { font-family: var(--sans); color: #fff; font-weight: 600; font-size: 14px; text-transform: none; letter-spacing: -0.005em; }
-.top .brand .d { color: var(--phos); }
+.top .brand .d { color: var(--circle-color); }
+
+/* Color selector panel */
+#tweaks-panel {
+  position: fixed;
+  top: 80px;
+  right: 28px;
+  z-index: 35;
+  background: rgba(7, 12, 10, 0.95);
+  border: 1px solid rgba(111, 200, 154, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 220px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(111,200,154,0.4) transparent;
+}
+#tweaks-panel::-webkit-scrollbar { width: 6px; }
+#tweaks-panel::-webkit-scrollbar-thumb {
+  background: rgba(111,200,154,0.4);
+  border-radius: 3px;
+}
+#tweaks-panel h4:first-child { margin-top: 0; }
+
+#tweaks-panel h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--phos-bright);
+  margin: 0;
+  text-shadow: 0 0 8px rgba(111,200,154,0.4);
+}
+
+.color-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.color-option {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.color-option:hover {
+  transform: scale(1.05);
+}
+
+.color-option.active {
+  border-color: #fff;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.color-option[data-color="#6fc89a"] {
+  background: #6fc89a;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3);
+}
+
+.color-option[data-color="#F4B182"] {
+  background: #F4B182;
+}
+
+.color-option[data-color="#b8f0d0"] {
+  background: #b8f0d0;
+}
+.tube-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tube-options button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(111, 200, 154, 0.25);
+  background: rgba(111, 200, 154, 0.06);
+  color: rgba(255,255,255,0.72);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.tube-options button:hover { border-color: rgba(111, 200, 154, 0.5); color: #fff; }
+.tube-options button.active {
+  border-color: var(--phos-bright);
+  background: rgba(111, 200, 154, 0.2);
+  color: var(--phos-bright);
+}
+.sb-label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.6); margin: 8px 0 2px;
+}
+.sb-label span { color: var(--phos-bright); }
+#tweaks-panel input[type="range"]#sbAmt,
+#tweaks-panel input[type="range"]#sbLen,
+#tweaks-panel input[type="range"]#sbAng {
+  width: 100%; accent-color: var(--phos-bright); cursor: pointer; margin: 0;
+}
 .top nav { display: flex; gap: 22px; }
 .top nav a { color: rgba(255,255,255,0.55); text-decoration: none; transition: color 0.2s ease; }
 .top nav a:hover { color: var(--phos-bright); }
@@ -649,6 +764,61 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
   <span class="pct"><span id="pPct">0%</span></span>
 </div>
 
+<div id="tweaks-panel" style="display: none;">
+  <h4>Circle Color</h4>
+  <div class="color-options">
+    <div class="color-option active" data-color="#6fc89a" title="Green (default)"></div>
+    <div class="color-option" data-color="#F4B182" title="Orange (tube accent)"></div>
+    <div class="color-option" data-color="#b8f0d0" title="Bright Green"></div>
+  </div>
+  <h4 style="margin-top:14px;">Tube Shape</h4>
+  <div class="tube-options" id="tubeOptions">
+    <button data-tube="v1c">1c · calm from ch4</button>
+    <button data-tube="v1a">1a · planar (no roll)</button>
+    <button data-tube="v1b">1b · low-pitch snake</button>
+    <button data-tube="v1d" class="active">1d · slow beat (+front bend)</button>
+    <button data-tube="v1dplain">1d · slow beat (plain)</button>
+    <button data-tube="v1e">1e · staircase (L-down-R-down)</button>
+    <button data-tube="v1orig">1 · original snake (ref)</button>
+    <button data-tube="v4">4 · sharp toward exit</button>
+    <button data-tube="v5">5 · dense snake</button>
+    <button data-tube="current">0 · current (live)</button>
+  </div>
+  <h4 style="margin-top:14px;">Start Bend <span style="float:right; color:rgba(255,255,255,0.4); font-size:9px; letter-spacing:0; text-transform:none;">1d</span></h4>
+  <p style="font-family:var(--mono); font-size:9px; line-height:1.5; color:rgba(255,255,255,0.4); margin:0;">mirror of the end-bend, on the tube entrance. hides the distance at 0%, reveals as you round it.</p>
+  <label class="sb-label">amount<span id="sbAmtVal">15</span></label>
+  <input type="range" id="sbAmt" min="0" max="180" step="5" value="15" />
+  <label class="sb-label">length<span id="sbLenVal">0.10</span></label>
+  <input type="range" id="sbLen" min="0.02" max="0.40" step="0.01" value="0.10" />
+  <label class="sb-label">angle<span id="sbAngVal">260°</span></label>
+  <input type="range" id="sbAng" min="0" max="360" step="5" value="260" />
+  <h4 style="margin-top:14px;">Blend Mode</h4>
+  <div class="tube-options" id="blendModeOptions">
+    <button data-blend="additive" class="active">additive → white</button>
+    <button data-blend="screen">screen (soft cap)</button>
+    <button data-blend="softadd">soft-add (gain)</button>
+    <button data-blend="average">average (hard cap)</button>
+    <button data-blend="tubecolor">tube color (flat)</button>
+    <button data-blend="lighten">lighten → white</button>
+    <button data-blend="normal">normal → bg</button>
+    <button data-blend="multiply">multiply → black</button>
+    <button data-blend="darken">darken → black</button>
+    <button data-blend="subtract">subtract</button>
+    <button data-blend="difference">difference</button>
+  </div>
+  <h4 style="margin-top:14px;">Luminosity Gain<span id="lumGainVal" style="float:right; color:rgba(255,255,255,0.55);">0.50</span></h4>
+  <input type="range" id="lumGainSlider" min="0.05" max="1" step="0.05" value="0.5" style="width:100%; accent-color: var(--phos-bright); cursor:pointer;" />
+  <p style="font-family:var(--mono); font-size:9px; line-height:1.5; color:rgba(255,255,255,0.4); margin:2px 0 0;">affects soft-add: how much each overlapping ray adds</p>
+  <h4 style="margin-top:14px;">Background</h4>
+  <div class="tube-options">
+    <button id="togglePureBlack" style="width: 100%;">bg: dark theme</button>
+  </div>
+  <h4 style="margin-top:14px;">Visibility</h4>
+  <div class="tube-options">
+    <button id="toggleDarkerRays" class="active" style="width: 100%;">darker rays: ON</button>
+  </div>
+</div>
+
 <!-- ====================== OUTRO ====================== -->
 <div class="layer" id="vapor">
   <!-- outro canvas -->
@@ -753,6 +923,13 @@ const TEST = {
   endBend: 50,         // sharp lateral bend added to the LAST stretch of the tube
   endBendStart: 0.98,  // where along the tube the end-bend begins (0..1)
   bendAngle: 90,       // direction of the bend in degrees (0=right, 90=up, 180=left, 270=down)
+  // START BEND — mirror of the end-bend, on the FRONT of the tube (used by 1d).
+  // Pushes the entrance sideways so the wall hides the distance at 0% scroll,
+  // easing back to centre by `startBendLen` so the rest is revealed as the
+  // camera rounds the lead-in bend. Live-tunable from the panel.
+  startBend: 15,        // sharp lateral bend amount at the entrance (0 = off)  [FINAL]
+  startBendLen: 0.10,   // how far down the tube the bend zone reaches (0..1)    [FINAL]
+  startBendAngle: 260,  // direction in degrees (0=right, 90=up, 180=left, 270=down) [FINAL]
   // rays vs opening — how the starfield's vanishing point relates to the moving tube opening:
   //  'follow' — focal tracks the opening directly (original; trails smear while it moves)
   //  'fade'   — same as follow, but the trail fade strengthens while the focal moves (wipes stale streaks)
@@ -808,6 +985,7 @@ const logoLeft = document.getElementById('logoLeft');
 const logoRight= document.getElementById('logoRight');
 const splashName = document.getElementById('splashName');
 const splashSub  = document.getElementById('splashSub');
+const tweaksPanel = document.getElementById('tweaks-panel');
 
 // B6: pause the autoplay/typing chain while the tab is hidden. rAF already
 // auto-throttles when backgrounded, but a setTimeout chain does not — so we
@@ -864,18 +1042,19 @@ async function runAutoplay() {
   bootEl.style.visibility = 'hidden';
   if (introCancelled) return;
 
-  // 3. trigger logo reveal
-  await sleep(120);
-  logoLeft.classList.add('go');
-  logoRight.classList.add('go');
-  await sleep(1600);
-  if (introCancelled) return;
-
-  // 4. show name + sub
+  // 3. show name + sub
   splashName.classList.add('in');
   await sleep(260);
   splashSub.classList.add('in');
-  await sleep(900);
+  await sleep(700);
+  if (introCancelled) return;
+
+  // 4. trigger logo reveal
+  await sleep(120);
+  logoLeft.classList.add('go');
+  logoRight.classList.add('go');
+  document.querySelector('.logo-wrap').classList.add('in');
+  await sleep(1600);
   if (introCancelled) return;
 
   // 5. fade splash → tunnel
@@ -900,6 +1079,7 @@ async function runAutoplay() {
   document.getElementById('top').classList.add('on');
   document.getElementById('pbar').classList.add('on');
   document.getElementById('hint').classList.add('on');
+  // FINAL build: dev tweaks panel stays hidden (tube + bend are locked in).
   setTimeout(() => document.getElementById('hint').classList.remove('on'), 4500);
 }
 
@@ -955,6 +1135,130 @@ function buildBasePoints() {
   }
   return pts;
 }
+
+// ============================================================
+// SHARP SNAKE CENTERLINES — variant tube shapes (1, 4, 5 from the explorer).
+// The heading oscillates (yaw + pitch) hard enough that the tube is always
+// turning, so the inner wall blocks the view down the barrel — no far white
+// pile-up — while keeping the lively wobble. Switchable live via the selector.
+// ============================================================
+function snakePath({ yawAmp, yawFreq, pitchAmp = 0.6, pitchFreq = 2, pitchPhase = Math.PI / 3, endBoost = 1, seg = 4.5,
+                     calmStart = null, calmEnd = 0.92, calmFloor = 0.3, pitchCalmFloor = null, segEndBoost = 1, yawPhase = 0 }) {
+  const pts = [];
+  const pos = new THREE.Vector3(0, 0, 0);
+  const dir = new THREE.Vector3();
+  const pFloor = pitchCalmFloor == null ? calmFloor : pitchCalmFloor;
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    const amp = 1 + (endBoost - 1) * t;
+    // CALM TAPER — ease the wobble amplitude down over [calmStart, calmEnd].
+    // The yaw (yawFreq) and pitch (pitchFreq) beat drifts into ~90° quadrature
+    // around the back half of the tube — a forward heading that traces a circle,
+    // which reads as a nauseating barrel-roll right around chapter 5. Tapering
+    // the amplitude there flattens the path into a gentle S that matches the
+    // calmer feel of the earlier chapters. Pitch is tapered harder than yaw
+    // because vertical sway drives the roll the most.
+    let yawT = amp, pitchT = amp;
+    if (calmStart !== null && t > calmStart) {
+      const u = Math.min(1, (t - calmStart) / (calmEnd - calmStart));
+      const ease = u * u * (3 - 2 * u); // smoothstep
+      yawT   = amp * (1 - (1 - calmFloor) * ease);
+      pitchT = amp * (1 - (1 - pFloor)   * ease);
+    }
+    const yaw   = yawAmp   * yawT   * Math.sin(2 * Math.PI * yawFreq   * t + yawPhase);
+    const pitch = pitchAmp * pitchT * Math.sin(2 * Math.PI * pitchFreq * t + pitchPhase);
+    dir.set(
+      Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(pitch),
+      -Math.cos(yaw) * Math.cos(pitch)
+    );
+    // SEG STRETCH — grow the step length toward the exit (segEndBoost > 1) so the
+    // distant coils spread out along the view axis. Far tube sections separate in
+    // depth instead of folding across one another down the barrel (self-overlap).
+    const segT = seg * (1 + (segEndBoost - 1) * t);
+    if (i > 0) pos.addScaledVector(dir, segT);
+    pts.push(pos.clone());
+  }
+  return pts;
+}
+
+// STAIRCASE / ZIGZAG — turns ONE axis at a time. yaw swings left↔right while
+// pitch holds; then pitch steps DOWN while yaw holds; repeat (left, down, right,
+// down …). The staircase term (φ − ½·sin2φ) is monotonic and FLAT exactly at the
+// yaw extremes (where yaw is paused) and steepest at the yaw zero-crossings, so
+// the two axes never turn at the same time → the tube bends like a chain of
+// elbows instead of a helix → no spin, no barf. Pitch only ever descends, so the
+// far tube drifts off the bottom of the view: its accumulation direction differs
+// from the near weave and the two stop overlapping down the barrel.
+function stairPath({ yawAmp = 1.2, turns = 3, pitchDrop = 0.85, seg = 4.5,
+                     calmStart = null, calmEnd = 0.92, calmFloor = 0.3 }) {
+  const pts = [];
+  const pos = new THREE.Vector3(0, 0, 0);
+  const dir = new THREE.Vector3();
+  const span = 2 * Math.PI * turns;
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    const ph = span * t;
+    let amp = 1;
+    if (calmStart !== null && t > calmStart) {
+      const u = Math.min(1, (t - calmStart) / (calmEnd - calmStart));
+      const ease = u * u * (3 - 2 * u);
+      amp = 1 - (1 - calmFloor) * ease;
+    }
+    const yaw   = yawAmp * amp * Math.sin(ph);
+    const pitch = -pitchDrop * ((ph - 0.5 * Math.sin(2 * ph)) / span);
+    dir.set(
+      Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(pitch),
+      -Math.cos(yaw) * Math.cos(pitch)
+    );
+    if (i > 0) pos.addScaledVector(dir, seg);
+    pts.push(pos.clone());
+  }
+  return pts;
+}
+const TUBE_VARIANTS = {
+  current: { label: '0 · current', make: () => applyEndBend(buildBasePoints()) },
+  // ORIGINAL sharp snake — UNTOUCHED, kept as the reference to compare against
+  // (no calm, no end-bend). This is the one whose chapter-4 stretch barfs.
+  v1orig: { label: '1 · original snake (ref)', make: () => snakePath({ yawAmp: 1.2, yawFreq: 2.5, pitchAmp: 0.5, pitchFreq: 1.8 }) },
+
+  // ---- fresh attempts. ALL keep the synced end-bend (applyEndBend), and ALL
+  //      target the barrel-roll that peaks around CHAPTER 4 (curve t ≈ 0.5),
+  //      where the yaw(2.5)/pitch(1.8) beat drifts into 90° quadrature and the
+  //      heading traces a circle — which the eye reads as a nauseating roll. ----
+
+  // A · PLANAR — pitch locked to the yaw frequency AND in phase, so (yaw,pitch)
+  // traces a straight line, not an ellipse. The heading sweeps in ONE plane:
+  // zero torsion, zero roll. Cleanest cure, still a lively diagonal snake.
+  v1a: { label: '1a · planar (no roll)',  make: () => applyEndBend(snakePath({ yawAmp: 1.25, yawFreq: 2.5, pitchAmp: 0.5, pitchFreq: 2.5, pitchPhase: 0 })) },
+
+  // B · LOW-PITCH — keep the sharp horizontal snake, cut the vertical sway right
+  // down. Barely any pitch → barely any roll, while the side-to-side stays sharp.
+  v1b: { label: '1b · low-pitch snake',   make: () => applyEndBend(snakePath({ yawAmp: 1.35, yawFreq: 2.5, pitchAmp: 0.13, pitchFreq: 1.8 })) },
+
+  // C · CALM FROM CH4 — original character through chapters 1–3, then taper the
+  // wobble from ~chapter 4 onward so the mid/back stretch settles into a gentle S.
+  v1c: { label: '1c · calm from ch4',     make: () => applyEndBend(snakePath({ yawAmp: 1.2, yawFreq: 2.5, pitchAmp: 0.5, pitchFreq: 1.8, calmStart: 0.36, calmEnd: 0.85, calmFloor: 0.32, pitchCalmFloor: 0.15 })) },
+
+  // D · SLOW BEAT — fewer, longer turns. The yaw/pitch quadrature point is spread
+  // out and gentle instead of a tight corkscrew, so nothing spins fast enough to barf.
+  // EXTENDED FRONT: applyStartBend (live-tunable from the panel) offsets the entrance
+  // so the distance is hidden at 0% and revealed as the camera rounds the lead-in bend.
+  v1d: { label: '1d · slow beat + front bend', make: () => applyStartBend(applyEndBend(snakePath({ yawAmp: 1.2, yawFreq: 1.5, pitchAmp: 0.42, pitchFreq: 1.1 }))) },
+  // The same slow beat WITHOUT the front bend — restored for side-by-side comparison.
+  v1dplain: { label: '1d · slow beat (plain)', make: () => applyEndBend(snakePath({ yawAmp: 1.2, yawFreq: 1.5, pitchAmp: 0.42, pitchFreq: 1.1 })) },
+
+  // E · STAIRCASE — bends one axis at a time (left, down, right, down …) so it
+  // never corkscrews; the steady descent declutters the far view. See stairPath.
+  v1e: { label: '1e · staircase',         make: () => applyEndBend(stairPath({ yawAmp: 1.2, turns: 3, pitchDrop: 0.85 })) },
+
+  v4: { label: '4 · sharp toward exit', make: () => snakePath({ yawAmp: 1.0, yawFreq: 2.6, pitchAmp: 0.6, pitchFreq: 2, endBoost: 1.9 }) },
+  v5: { label: '5 · dense snake',      make: () => snakePath({ yawAmp: 1.1, yawFreq: 4, pitchAmp: 0.6, pitchFreq: 3.2 }) },
+};
+let activeTube = 'v1d';
+function currentCenterline() { return (TUBE_VARIANTS[activeTube] || TUBE_VARIANTS.v1orig).make(); }
+
 // Optional SHARP BEND on the final stretch — applied as an additive deformation
 // on top of WHATEVER base centerline you have, so the far opening stays hidden
 // behind the tube wall until the camera rounds the corner near the very end.
@@ -973,7 +1277,30 @@ function applyEndBend(pts) {
     return p.clone().addScaledVector(dir, amt * k);
   });
 }
-let curve = new THREE.CatmullRomCurve3(applyEndBend(buildBasePoints()), false, 'catmullrom', 0.5);
+
+// START BEND — a faithful MIRROR of applyEndBend, applied to the FRONT of the
+// tube. Where the end-bend kicks the last `1-endBendStart` of the tube sideways
+// (k = u²) so the exit hides behind the wall, this kicks the first `startBendLen`
+// sideways (k = (1-u)², the mirror) so the ENTRANCE wall hides the distance at
+// 0% scroll. The offset eases to zero by `startBendLen`, so the rest of the tube
+// is smoothly revealed as the camera rounds the lead-in bend (≈ chapters 1→2).
+// All three knobs (amount / length / angle) live in TEST and are panel-tunable.
+function applyStartBend(pts, opts = {}) {
+  const amt    = opts.amt    != null ? opts.amt    : TEST.startBend;
+  const until  = opts.until  != null ? opts.until  : TEST.startBendLen;
+  const angle  = opts.angle  != null ? opts.angle  : TEST.startBendAngle;
+  if (!amt) return pts;
+  const n = pts.length;
+  const a = angle * Math.PI / 180;
+  const dir = new THREE.Vector3(Math.cos(a), Math.sin(a), 0);
+  return pts.map((p, i) => {
+    const t = i / (n - 1);
+    if (t >= until) return p;
+    const u = t / until;            // 0 at the very start → 1 at `until`
+    const k = (1 - u) * (1 - u);    // mirror of the end-bend's u² — sharp at entrance
+    return p.clone().addScaledVector(dir, amt * k);
+  });
+}
 
 // ---- per-curve caches + scratch vectors (perf) ----
 // Everything derivable from the curve alone is computed ONCE per tube build:
@@ -1003,11 +1330,86 @@ function refreshCurveCache() {
 // Green wireframes (terminal aesthetic) — rebuilt by buildTube() so the bend
 // controls can reshape the tube live. Materials are created ONCE and shared
 // across rebuilds (the old code created — and leaked — a fresh pair per rebuild).
-const tubeMat1 = new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
-const tubeMat2 = new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false });
+
+// ============================================================
+// BLEND MODE SYSTEM
+// GPU blending computes:  result = src×srcFactor  (EQUATION)  dst×dstFactor,
+// clamped to [0,1]. The EQUATION is one of: Add, Subtract, ReverseSubtract,
+// Min, Max. The FACTORS scale each side (One, Zero, SrcColor, DstColor,
+// OneMinusSrcColor, ConstantColor, …). three.js ships 5 named presets; the
+// rest below are assembled by hand from CustomBlending + equation + factors.
+//
+// Descriptor: { builtin } | { custom:{equation,src,dst}, usesGain?, constant? }
+//  · usesGain  → src factor is ConstantColor, scaled live by the gain slider
+//  · constant  → fixed ConstantColor value baked in (e.g. 0.5 for average)
+// ============================================================
+let lumGain = 0.5; // 0..1 — per-ray contribution for the soft-add mode
+const BLEND_MODES = {
+  // src + dst — light piles up, overlaps race to WHITE (no ceiling)
+  additive: { builtin: THREE.AdditiveBlending },
+  // src + dst − src·dst — SELF-LIMITING additive: each layer adds less as it
+  // brightens, asymptotically approaching (never overshooting) white. Soft cap.
+  screen:   { custom: { equation: THREE.AddEquation, src: THREE.OneFactor, dst: THREE.OneMinusSrcColorFactor } },
+  // src×gain + dst — additive with a dialable per-ray gain (slider). Low gain =
+  // gentle brightening that takes far more overlap to reach white.
+  softadd:  { custom: { equation: THREE.AddEquation, src: THREE.ConstantColorFactor, dst: THREE.OneFactor }, usesGain: true },
+  // src×0.5 + dst×0.5 — weighted average. Overlaps blend toward the mean and can
+  // NEVER exceed a single ray's brightness → a true HARD cap at the ray color.
+  average:  { custom: { equation: THREE.AddEquation, src: THREE.ConstantColorFactor, dst: THREE.OneMinusConstantColorFactor }, constant: 0.5 },
+  // per-RGB-channel max(src,dst) — keeps the brighter; overlaps drift to WHITE
+  lighten:  { custom: { equation: THREE.MaxEquation, src: THREE.OneFactor, dst: THREE.OneFactor } },
+  // standard alpha composite; respects fog → distant overlaps fade to BACKGROUND
+  normal:   { builtin: THREE.NormalBlending },
+  // src×dst — multiplies colors, overlaps darken toward BLACK
+  multiply: { builtin: THREE.MultiplyBlending },
+  // per-RGB-channel min(src,dst) — keeps the darker; overlaps drift to BLACK
+  darken:   { custom: { equation: THREE.MinEquation, src: THREE.OneFactor, dst: THREE.OneFactor } },
+  // dst×(1−src) — rays carve darkness OUT of the background (inverse of screen)
+  subtract: { builtin: THREE.SubtractiveBlending },
+  // dst − src — reverse-subtract; overlaps invert into dark glitch edges
+  difference: { custom: { equation: THREE.ReverseSubtractEquation, src: THREE.OneFactor, dst: THREE.OneFactor } },
+  // src=constant tube color, dst=0 — PINS every drawn pixel to the tube color
+  // regardless of overlap. No brightening, no darkening: overlaps stay green.
+  tubecolor: { custom: { equation: THREE.AddEquation, src: THREE.ConstantColorFactor, dst: THREE.ZeroFactor }, constantColorHex: 0x4f8c6f },
+};
+let currentBlendMode = 'additive';
+let pureBlackBg = false;
+
+let tubeMat1 = new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
+let tubeMat2 = new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false });
+
+function applyBlend(mat, desc) {
+  if (desc.builtin !== undefined) {
+    mat.blending = desc.builtin;
+  } else {
+    mat.blending = THREE.CustomBlending;
+    mat.blendEquation = desc.custom.equation;
+    mat.blendSrc = desc.custom.src;
+    mat.blendDst = desc.custom.dst;
+    if (desc.usesGain) mat.blendColor.setScalar(lumGain);
+    else if (desc.constantColorHex !== undefined) mat.blendColor.setHex(desc.constantColorHex);
+    else if (desc.constant !== undefined) mat.blendColor.setScalar(desc.constant);
+  }
+  mat.needsUpdate = true;
+}
+function setBlendMode(modeName) {
+  const desc = BLEND_MODES[modeName];
+  if (!desc) return;
+  currentBlendMode = modeName;
+  applyBlend(tubeMat1, desc);
+  applyBlend(tubeMat2, desc);
+}
+function setLumGain(g) {
+  lumGain = g;
+  const desc = BLEND_MODES[currentBlendMode];
+  if (desc && desc.usesGain) {
+    tubeMat1.blendColor.setScalar(g); tubeMat1.needsUpdate = true;
+    tubeMat2.blendColor.setScalar(g); tubeMat2.needsUpdate = true;
+  }
+}
 let tubeMesh1 = null, tubeMesh2 = null;
 function buildTube() {
-  curve = new THREE.CatmullRomCurve3(applyEndBend(buildBasePoints()), false, 'catmullrom', 0.5);
+  curve = new THREE.CatmullRomCurve3(currentCenterline(), false, 'catmullrom', 0.5);
   refreshCurveCache();
   if (tubeMesh1) { scene.remove(tubeMesh1); tubeMesh1.geometry.dispose(); }
   if (tubeMesh2) { scene.remove(tubeMesh2); tubeMesh2.geometry.dispose(); }
@@ -1030,6 +1432,60 @@ function requestTubeRebuild() {
   requestAnimationFrame(() => { tubeRebuildQueued = false; buildTube(); });
 }
 // initial tube is built once `rings` exist (see after the ring setup below)
+
+// ============================================================
+// BLEND MODE CONTROLS
+// ============================================================
+const blendModeButtons = document.querySelectorAll('#blendModeOptions button');
+blendModeButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.getAttribute('data-blend');
+    setBlendMode(mode);
+    blendModeButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// luminosity gain slider — drives the soft-add per-ray contribution
+const lumGainSlider = document.getElementById('lumGainSlider');
+const lumGainVal = document.getElementById('lumGainVal');
+lumGainSlider.addEventListener('input', () => {
+  const g = parseFloat(lumGainSlider.value);
+  setLumGain(g);
+  lumGainVal.textContent = g.toFixed(2);
+});
+
+// ============================================================
+// BACKGROUND COLOR TOGGLE
+// The WebGL canvas is transparent (clear alpha = 0) so the starfield can show
+// through — changing the renderer clear color alone is invisible. The REAL
+// background is the <body> CSS color and the scene FOG color (distant geometry
+// fades into the fog). So we toggle both.
+//   dark theme: #070c0a   ·   pure black: #000000
+// ============================================================
+const bgToggleBtn = document.getElementById('togglePureBlack');
+bgToggleBtn.addEventListener('click', () => {
+  pureBlackBg = !pureBlackBg;
+  const hex = pureBlackBg ? '#000000' : '#070c0a';
+  document.body.style.background = hex;
+  scene.fog.color.set(hex);
+  bgToggleBtn.classList.toggle('active');
+  bgToggleBtn.textContent = pureBlackBg ? 'bg: pure black' : 'bg: dark theme';
+});
+
+// ============================================================
+// DARKER RAYS TOGGLE
+// ============================================================
+let darkerRaysVisible = true;
+const toggleBtn = document.getElementById('toggleDarkerRays');
+toggleBtn.addEventListener('click', () => {
+  darkerRaysVisible = !darkerRaysVisible;
+  if (tubeMesh2) {
+    tubeMesh2.visible = darkerRaysVisible;
+  }
+  toggleBtn.classList.toggle('active');
+  toggleBtn.textContent = darkerRaysVisible ? 'darker rays: ON' : 'darker rays: OFF';
+});
 
 const CHAPTERS = [
   { id: "intro",    label: "intro",       at: 0.05, pos: "pos-left",
@@ -1801,6 +2257,87 @@ window.addEventListener('load', () => {
   updateScroll();
   setTimeout(runAutoplay, 200);
 });
+
+// ============================================================
+// COLOR SELECTOR — circle color tweaks
+// ============================================================
+const colorOptions = document.querySelectorAll('.color-option');
+const defaultColor = '#6fc89a';
+
+// Load saved color from localStorage
+function loadCircleColor() {
+  const saved = localStorage.getItem('circle-color');
+  const color = saved || defaultColor;
+  setCircleColor(color);
+}
+
+function setCircleColor(color) {
+  document.documentElement.style.setProperty('--circle-color', color);
+  localStorage.setItem('circle-color', color);
+  
+  // Update active state
+  colorOptions.forEach(opt => {
+    if (opt.getAttribute('data-color') === color) {
+      opt.classList.add('active');
+    } else {
+      opt.classList.remove('active');
+    }
+  });
+}
+
+colorOptions.forEach(option => {
+  option.addEventListener('click', () => {
+    const color = option.getAttribute('data-color');
+    setCircleColor(color);
+  });
+});
+
+// Initialize on page load
+loadCircleColor();
+
+// ============================================================
+// TUBE SHAPE SELECTOR — swap the live tunnel centerline
+// ============================================================
+(function () {
+  const wrap = document.getElementById('tubeOptions');
+  if (!wrap) return;
+  wrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTube = btn.getAttribute('data-tube');
+      wrap.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      buildTube();
+    });
+  });
+})();
+
+// ============================================================
+// START-BEND SLIDERS — live-tune the front lead-in bend (used by 1d).
+// Each input writes a TEST.* param and rebuilds the tube on the next frame.
+// ============================================================
+(function () {
+  const amt = document.getElementById('sbAmt');
+  const len = document.getElementById('sbLen');
+  const ang = document.getElementById('sbAng');
+  if (!amt || !len || !ang) return;
+  const amtVal = document.getElementById('sbAmtVal');
+  const lenVal = document.getElementById('sbLenVal');
+  const angVal = document.getElementById('sbAngVal');
+  amt.addEventListener('input', () => {
+    TEST.startBend = parseFloat(amt.value);
+    amtVal.textContent = amt.value;
+    requestTubeRebuild();
+  });
+  len.addEventListener('input', () => {
+    TEST.startBendLen = parseFloat(len.value);
+    lenVal.textContent = parseFloat(len.value).toFixed(2);
+    requestTubeRebuild();
+  });
+  ang.addEventListener('input', () => {
+    TEST.startBendAngle = parseFloat(ang.value);
+    angVal.textContent = ang.value + '°';
+    requestTubeRebuild();
+  });
+})();
 
 </script>
 </body>
