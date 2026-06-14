@@ -14,7 +14,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
 import rehypeExternalLinks from 'rehype-external-links';
 import rehypeKatex from 'rehype-katex';
-import { rehypeHeadingIds } from '@astrojs/markdown-remark';
+import { rehypeHeadingIds, unified } from '@astrojs/markdown-remark';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 export default defineConfig({
@@ -33,53 +33,53 @@ export default defineConfig({
     ],
   },
   markdown: {
-    remarkPlugins: [remarkReadingTime, remarkMath, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
-    rehypePlugins: [
-      [
-        rehypeExternalLinks,
-        {
-          content: { type: 'text', value: ' ↗' },
-          target: '_blank',
-          rel: ['nofollow', 'noopener'],
-        },
-      ],
-      rehypeKatex, rehypeAccessibleEmojis,
-
-      rehypeHeadingIds, // precisa rodar antes de rehypeAutolinkHeadings pros ids existirem na hora de associar os links
-      [
-        rehypeAutolinkHeadings,
-        {
-          behavior: 'append',
-          properties: {
-            className: ['anchor-link'], // class to be styled in Tailwind
-            ariaHidden: 'true',
-            tabIndex: -1
+    processor: unified({
+      remarkPlugins: [remarkReadingTime, remarkMath, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
+      rehypePlugins: [
+        [
+          rehypeExternalLinks,
+          {
+            content: { type: 'text', value: ' ↗' },
+            target: '_blank',
+            rel: ['nofollow', 'noopener'],
           },
-          content: { type: 'text', value: '#' },
-        },
+        ],
+        rehypeKatex, rehypeAccessibleEmojis,
+
+        rehypeHeadingIds, // precisa rodar antes de rehypeAutolinkHeadings pros ids existirem na hora de associar os links
+        [
+          rehypeAutolinkHeadings,
+          {
+            behavior: 'append',
+            properties: {
+              className: ['anchor-link'], // class to be styled in Tailwind
+              ariaHidden: 'true',
+              tabIndex: -1
+            },
+            content: { type: 'text', value: '#' },
+          },
+        ],
       ],
-    ],
+    }),
   },
-  experimental: {
-    fonts: [
-      {
-        name: "Montserrat",
-        cssVariable: "--font-montserrat",
-        provider: fontProviders.google(),
-        weights: [400, 700],
-        styles: ["normal", "italic"],
-        subsets: ["latin"],
-      },
-      {
-        name: "JetBrains Mono",
-        cssVariable: "--font-jetbrains-mono",
-        provider: fontProviders.google(),
-        weights: [400, 900],
-        styles: ["normal"],
-        subsets: ["latin"],
-        fallbacks: ["monospace"],
-      },
-    ],
-  },
+  fonts: [
+    {
+      name: "Montserrat",
+      cssVariable: "--font-montserrat",
+      provider: fontProviders.google(),
+      weights: [400, 700],
+      styles: ["normal", "italic"],
+      subsets: ["latin"],
+    },
+    {
+      name: "JetBrains Mono",
+      cssVariable: "--font-jetbrains-mono",
+      provider: fontProviders.google(),
+      weights: [400, 900],
+      styles: ["normal"],
+      subsets: ["latin"],
+      fallbacks: ["monospace"],
+    },
+  ],
 });
 
