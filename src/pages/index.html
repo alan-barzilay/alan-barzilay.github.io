@@ -6,7 +6,7 @@
 <title>Alan Barzilay — Developer · Researcher · Maker</title>
 <meta name="description" content="Alan Barzilay - Developer, researcher, and maker. ML / NLP by trade. Arch, Debian, NixOS sysadmin, and open-source contributor." />
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+
 <style>
 :root {
   interpolate-size: allow-keywords;
@@ -859,6 +859,7 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
 
 <div class="grain"></div>
 
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
 <script>
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
@@ -2238,7 +2239,7 @@ function frame(ts) {
 frame();
 
 // Kick off autoplay intro on load (re-measure the scroll range once settled)
-window.addEventListener('load', () => {
+function initAutoplay() {
   if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual';
   }
@@ -2246,7 +2247,13 @@ window.addEventListener('load', () => {
   updateScrollMax();
   updateScroll();
   setTimeout(runAutoplay, 200);
-});
+}
+
+if (document.readyState === 'complete') {
+  initAutoplay();
+} else {
+  window.addEventListener('load', initAutoplay);
+}
 
 // ============================================================
 // COLOR SELECTOR — circle color tweaks
