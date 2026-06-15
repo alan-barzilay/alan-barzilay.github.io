@@ -647,11 +647,7 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
     grid-template-columns: repeat(2, 1fr);
   }
 }
-@media (max-width: 768px) {
-  .vapor-posts {
-    grid-template-columns: 1fr;
-  }
-}
+
 .vapor-post {
   /* B1: backdrop-filter blur removed — it sat OVER the animating starfield and
      forced a re-copy + re-blur of background pixels every frame. Background
@@ -826,49 +822,71 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
     transform: translateY(-4px);
   }
 }
-@media (max-width: 600px) or (max-height: 720px) {
+
+@media (max-width: 768px) {
   #vapor {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 40px 16px 60px !important;
+    padding: 24px 16px 40px;
   }
   .vapor-content {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 24px !important;
-    margin: auto 0 !important;
-    width: 100% !important;
+    gap: 20px;
   }
   .vapor-content h1 {
-    font-size: clamp(36px, 8vw, 64px);
-    margin: 0 !important;
+    margin-bottom: 8px;
   }
   .vapor-posts {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   .vapor-post {
-    padding: 16px 18px !important;
-  }
-  .vapor-post p {
-    font-size: 12px !important;
-  }
-  .vapor-post.blog-cta-card {
-    min-height: 90px !important;
-  }
-  .vapor-post.blog-cta-card h3 {
-    font-size: 18px !important;
+    padding: 16px 18px;
   }
   .vapor-socials {
-    margin-top: 16px !important;
-    padding-bottom: 20px !important;
+    gap: 12px;
+  }
+  .vapor-socials a {
+    width: 44px;
+    height: 44px;
+  }
+  .vapor-socials a svg, .vapor-socials a img {
+    width: 18px;
+    height: 18px;
   }
 }
+@media (max-width: 768px) and (max-height: 780px), (max-height: 540px) {
+  .vapor-posts .vapor-post:nth-child(3) {
+    display: none;
+  }
+}
+@media (min-width: 769px) and (max-height: 540px) {
+  .vapor-posts {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 768px) and (max-height: 650px), (max-height: 400px) {
+  .vapor-post .meta {
+    display: none;
+  }
+  .vapor-post {
+    padding: 12px 14px;
+  }
+  .vapor-post h3 {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  .vapor-post p {
+    font-size: 12px;
+  }
+  .vapor-posts {
+    gap: 8px;
+  }
+  #vapor {
+    padding: 16px 12px 28px;
+  }
+  .vapor-content {
+    gap: 14px;
+  }
+}
+
 </style>
 </head>
 <body class="locked v-green-theme">
