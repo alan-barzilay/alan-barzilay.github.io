@@ -123,9 +123,17 @@ body.locked { overflow: hidden; }
   justify-content: center;
   gap: 36px;
   pointer-events: none;
-  filter: hue-rotate(90deg); /* Static filter! Calculated once and cached */
+  --phos: #6f9ac8;       /* Blue instead of green */
+  --phos-bright: #d0b8f0; /* Purple/Light Blue */
+  --phos-dim: #3a5a7a;    /* Dark Blue */
   opacity: 0.001; /* Pre-warmed for GPU rendering */
   will-change: opacity, transform;
+}
+#splashInnerGlitch .logo-wrap {
+  filter: none !important; /* Disable expensive drop-shadow on glitch copy */
+}
+#splashInnerGlitch .splash-name {
+  text-shadow: none;
 }
 
 /* Base elements under #splashInnerGlitch are always statically in their final revealed state */
