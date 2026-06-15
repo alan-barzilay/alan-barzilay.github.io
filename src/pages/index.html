@@ -816,6 +816,16 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
     gap: 12px;
   }
 }
+@media (max-width: 768px) {
+  .top nav {
+    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  .top.hide-nav nav {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+  }
+}
 </style>
 </head>
 <body class="locked v-green-theme">
@@ -2012,8 +2022,14 @@ let lastTunnelOpacity = -1;
 let vaporHidden = true;      // mirrors the CSS initial state of #vapor (hidden)
 let lastVaporOpacity = '', lastMask = '', lastCe = -1, lastGlow = -1;
 let maskDropped = false; // B4: true once the reveal is fully open and the mask has been released
+let lastHideNav = null;
 
 function updateLayers(p) {
+  const shouldHideNav = p >= 0.91;
+  if (shouldHideNav !== lastHideNav) {
+    lastHideNav = shouldHideNav;
+    if (topEl) topEl.classList.toggle('hide-nav', shouldHideNav);
+  }
   // Tunnel canvas opacity: fully visible through tunnelEnd, then fade to 0 by tunnelFlash
   const tunnelOpacity = p > PHASES.tunnelEnd
     ? 1 - clamp01((p - PHASES.tunnelEnd) / (PHASES.tunnelFlash - PHASES.tunnelEnd))
