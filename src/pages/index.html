@@ -622,7 +622,7 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
   font-size: clamp(48px, 8vw, 120px);
   line-height: 0.88;
   letter-spacing: -0.04em;
-  margin: 0;
+  margin: 0 0 16px 0;
   color: #fff;
 }
 .vapor-content h1 em { font-style: italic; font-weight: 300; }
@@ -637,10 +637,15 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
 
 .vapor-posts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   width: 100%;
   max-width: 1080px;
+}
+@media (max-width: 1024px) and (min-width: 769px) {
+  .vapor-posts {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 @media (max-width: 768px) {
   .vapor-posts {
@@ -696,6 +701,47 @@ details.more dd { color: rgba(255,255,255,0.6); margin: 0; }
   color: rgba(255,255,255,0.7);
 }
 /* tags removed */
+
+.vapor-post.blog-cta-card {
+  border-color: rgba(244, 177, 130, 0.4);
+  background: linear-gradient(180deg, #070c0a 0%, #14100d 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.vapor-post.blog-cta-card .meta {
+  color: var(--tube-accent);
+}
+.vapor-post.blog-cta-card h3 {
+  color: var(--tube-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 22px;
+  margin: 0;
+}
+.vapor-post.blog-cta-card h3 svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  transition: transform 0.3s ease;
+}
+.vapor-post.blog-cta-card:hover {
+  background: var(--tube-accent);
+  border-color: var(--tube-accent);
+  color: #070c0a;
+}
+.vapor-post.blog-cta-card:hover h3,
+.vapor-post.blog-cta-card:hover .meta {
+  color: #070c0a;
+}
+.vapor-post.blog-cta-card:hover h3 svg {
+  transform: translateX(4px);
+  stroke: #070c0a;
+}
 
 .vapor-socials {
   display: flex; gap: 16px;
@@ -921,7 +967,6 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
 
   <div class="vapor-content">
     <h1>continue <em>reading.</em></h1>
-    <p class="lede">Notes, experiments and ramblings. A blog about whatever I'm into at the moment.</p>
 
     <div class="vapor-posts">
       <a class="vapor-post" href="/blog/making-a-website-in-2025">
@@ -938,6 +983,15 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
         <div class="meta"><span>2024 · 11 · 19</span></div>
         <h3>nexo — news structure with LLMs</h3>
         <p>pulling apart a brazilian newsroom&rsquo;s article structure.</p>
+      </a>
+      <a class="vapor-post blog-cta-card" href="/blog">
+        <h3>
+          visit the blog
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </h3>
       </a>
     </div>
 
