@@ -1755,8 +1755,15 @@ scene.add(points);
 let shadersReady = false;
 if (typeof renderer.compileAsync === 'function') {
   renderer.compileAsync(scene, camera)
-    .then(() => { shadersReady = true; })
-    .catch(() => { shadersReady = true; }); // never leave the tunnel un-rendered
+    .then(() => {
+      // Warm up compile & link caches by forcing a single synchronous dummy render 
+      // while the user is viewing the typing boot logs.
+      renderer.render(scene, camera);
+      shadersReady = true;
+    })
+    .catch(() => {
+      shadersReady = true; // never leave the tunnel un-rendered
+    });
 } else {
   shadersReady = true; // older three.js: fall back to a synchronous first-render compile
 }
