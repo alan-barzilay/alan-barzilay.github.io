@@ -140,8 +140,10 @@ body.locked { overflow: hidden; }
 #splashInnerGlitch .splash-name { opacity: 1; }
 #splashInnerGlitch .splash-sub { opacity: 1; }
 #splashInnerGlitch .logo-wrap { opacity: 1; }
-#splashInnerGlitch .logo-half.left { clip-path: inset(0 0 0 0); }
-#splashInnerGlitch .logo-half.right { clip-path: inset(0 0 0 0); }
+#splashInnerGlitch .logo-half.left { transform: translateX(0); }
+#splashInnerGlitch .logo-half.right { transform: translateX(0); }
+#splashInnerGlitch .logo-half.left svg { transform: translateX(0); }
+#splashInnerGlitch .logo-half.right svg { transform: translateX(0); }
 
 .glitch-out {
   animation: terminalGlitchBase 0.45s steps(1) forwards;
@@ -181,25 +183,45 @@ body.locked { overflow: hidden; }
 .logo-half {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
+  overflow: hidden;
+  will-change: transform;
 }
 .logo-half svg {
   width: 100%; height: 100%;
   display: block;
   fill: var(--phos-bright);
+  will-change: transform;
 }
 
-/* the reveal — each half clips inward from its outer edge */
-.logo-half.left  { clip-path: inset(0 100% 0 0); }
-.logo-half.right { clip-path: inset(0 0 0 100%); }
-.logo-half.left.go  { animation: revealLeft  1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-.logo-half.right.go { animation: revealRight 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-@keyframes revealLeft {
-  from { clip-path: inset(0 100% 0 0); }
-  to   { clip-path: inset(0 0 0 0); }
+/* the reveal — each half moves inward and SVG moves opposite */
+.logo-half.left  { transform: translateX(-100%); }
+.logo-half.right { transform: translateX(100%); }
+
+.logo-half.left svg  { transform: translateX(100%); }
+.logo-half.right svg { transform: translateX(-100%); }
+
+.logo-half.left.go  { animation: revealLeftContainer  1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.logo-half.right.go { animation: revealRightContainer 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+
+.logo-half.left.go svg  { animation: revealLeftContent  1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.logo-half.right.go svg { animation: revealRightContent 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+
+@keyframes revealLeftContainer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
 }
-@keyframes revealRight {
-  from { clip-path: inset(0 0 0 100%); }
-  to   { clip-path: inset(0 0 0 0); }
+@keyframes revealLeftContent {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes revealRightContainer {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes revealRightContent {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
 }
 
 .splash-name {
@@ -1018,6 +1040,7 @@ const TEST = {
 };
 let introCancelled = false;
 let introPlaying = true;
+let renderTunnel = false;
 let lastTCurve = 0;
 let lastOpening = null;
 // shared smoothed reveal centre (projected tube opening, low-passed) — drives
@@ -1161,6 +1184,7 @@ async function runAutoplay() {
   if (introCancelled) return;
 
   // 5. start WebGL and warm up the renderer in the background (invisible)
+  renderTunnel = true;
   introPlaying = false;
 
   // Wait 4 frames to ensure Three.js compile/first-frame render has completed off-screen and settled
@@ -1168,6 +1192,8 @@ async function runAutoplay() {
     await new Promise(requestAnimationFrame);
     if (introCancelled) return;
   }
+  // Pause rendering during the glitch animation to save CPU/GPU resources
+  renderTunnel = false;
 
   // 6. Glitch Out splash screen inner content
   const canvas = document.getElementById('tunnel-canvas');
@@ -1179,6 +1205,9 @@ async function runAutoplay() {
   }
   await sleep(450);
   if (introCancelled) return;
+
+  // Resume rendering permanently now that the splash screen is gone
+  renderTunnel = true;
 
   // Zero-blend hard cut to instantly reveal the canvas and chrome
   canvas.style.transition = 'none';
@@ -2274,7 +2303,7 @@ function frame(ts) {
   // tunnel camera: ease into the deep end so by tunnelEnd the camera is at
   // curve t ≈ 0.998 — we've travelled the full tube. Fog density takes over
   // ahead, leaving only the immediate tube walls visible at the screen borders.
-  if (tunnelVisible && !introPlaying) {
+  if (tunnelVisible && !introPlaying && renderTunnel) {
   let tCurve;
   if (p < PHASES.tunnelOut) {
     tCurve = lerp(0.001, 0.92, p / PHASES.tunnelOut);
@@ -2347,7 +2376,7 @@ function frame(ts) {
 
   // gate the first GL render on async shader compile (see compileAsync above);
   // once shadersReady flips true it stays true, so this is a no-op thereafter.
-  if (tunnelVisible && shadersReady && !introPlaying) renderer.render(scene, camera);
+  if (tunnelVisible && shadersReady && !introPlaying && renderTunnel) renderer.render(scene, camera);
 
   if (outroActive) {
     StarfieldEffect.draw(dt);
