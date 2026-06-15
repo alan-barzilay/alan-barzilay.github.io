@@ -1054,14 +1054,14 @@ window.TEST = TEST;
 // ============================================================
 const BOOT_LOGS = [
   ["ok",   "firmware revision 0x2b loaded"],
-  ["ok",   "mounting /experience on /dev/sda1, readonly: false"],
-  ["ok",   "starting personality.bin                                  [ OK ]"],
-  ["ok",   "loading modules: linux, python, hands, opinions           [ OK ]"],
-  ["warn", "module curiosity: too many side projects                  [ WARN ]"],
-  ["ok",   "phosphor lit"],
+  ["ok",   "mounting /dev/sda1, readonly: true"],
+  ["ok",   "loading modules                                          [ OK ]"],
+  ["warn", "unnecessarily fancy js to impress recruiters             [WARN]"],
+  ["warn", "sorry, I tried optimizing                                [WARN]"],
+  ["ok",   "phosphor lit                                             [ OK ]"],
   ["ok",   ""],
   ["ok",   "user=alan  shell=/bin/zsh  pwd=~/sites/personal"],
-  ["ok",   "status: alive · uptime: 12y 03m 14d"],
+  ["ok",   "status: alive · uptime: 31y 03m 14d"],
 ];
 
 function prepareBootLogs() {
@@ -1079,7 +1079,7 @@ function prepareBootLogs() {
     
     const tagSpan = document.createElement('span');
     tagSpan.className = kind === 'warn' ? 'warn' : 'ok';
-    tagSpan.textContent = kind === 'warn' ? '[ warn] ' : '[ ok ] ';
+    tagSpan.textContent = kind === 'warn' ? '[warn] ' : '[ ok ] ';
     lineDiv.appendChild(tagSpan);
     
     const msgSpan = document.createElement('span');
