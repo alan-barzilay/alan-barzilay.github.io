@@ -1558,10 +1558,12 @@ function buildTube() {
   if (tubeMesh2) { scene.remove(tubeMesh2); tubeMesh2.geometry.dispose(); }
   const g1 = new THREE.TubeGeometry(curve, 800, 6, 16, false);
   tubeMesh1 = new THREE.LineSegments(new THREE.WireframeGeometry(g1), tubeMat1);
+  tubeMesh1.frustumCulled = false;
   scene.add(tubeMesh1);
   g1.dispose();
   const g2 = new THREE.TubeGeometry(curve, 600, 6, 6, false);
   tubeMesh2 = new THREE.LineSegments(new THREE.WireframeGeometry(g2), tubeMat2);
+  tubeMesh2.frustumCulled = false;
   scene.add(tubeMesh2);
   g2.dispose();
   if (typeof rings !== 'undefined' && rings.length) layoutRings();
@@ -1687,11 +1689,13 @@ CHAPTERS.forEach((ch) => {
     new THREE.TorusGeometry(5.2, 0.10, 6, 96),
     new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })
   );
+  ring.frustumCulled = false;
   scene.add(ring);
   const halo = new THREE.Mesh(
     new THREE.TorusGeometry(5.5, 0.04, 4, 64),
     new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })
   );
+  halo.frustumCulled = false;
   scene.add(halo);
   rings.push(ring);
   ringHalos.push(halo);
@@ -1728,6 +1732,7 @@ const ptMat = new THREE.PointsMaterial({
   blending: THREE.AdditiveBlending, depthWrite: false
 });
 const points = new THREE.Points(ptGeo, ptMat);
+points.frustumCulled = false;
 scene.add(points);
 
 // ============================================================
