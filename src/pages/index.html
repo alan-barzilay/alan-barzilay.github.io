@@ -81,6 +81,11 @@ body.locked { overflow: hidden; }
   letter-spacing: 0.06em;
 }
 .boot-content .head b { color: var(--phos-bright); font-weight: 400; }
+/* Demand-driven header break: prompt and command are each nowrap units, so the
+   ONLY break opportunity is the space between them. The hanging indent drops the
+   command to its own 2ch-indented line only when both don't fit on one line. */
+.boot-content .head { padding-left: 2ch; text-indent: -2ch; }
+.boot-content .head .prompt, .boot-content .head .cmd { white-space: nowrap; }
 .boot-content pre {
   color: var(--phos); white-space: pre; margin: 0;
   font-family: var(--mono); font-size: 13px; line-height: 1.75;
@@ -89,6 +94,38 @@ body.locked { overflow: hidden; }
 .boot-content pre .warn { color: #ff9a55; }
 .boot-content pre .ts { color: rgba(111,200,154,0.35); margin-right: 8px; }
 .boot-content pre .dim { color: var(--phos-dim); }
+
+/* --- Responsive boot log — A + B + controlled breaks from one data source ---
+   A single structured BOOT_LOGS drives everything:
+     · Desktop: the padded single-line look is GENERATED (status folded back in
+       at the original column) → pixel-identical to before, white-space:pre.
+     · Mobile: the status indicator is broken into its own flex-pinned node,
+       timestamps are hidden, the font scales with clamp() and the body word-
+       wraps as a safety net, and author-tagged lines split at the requested
+       break points ONLY when the full line doesn't fit (see measureColumns).
+   No duplicated mobile array; typing still mutates only the .msg text node, so
+   the per-char typing optimisation is preserved. --------------------------- */
+@media (max-width: 768px) {
+  .boot-content { padding: 44px 20px; }
+  .boot-content .head { font-size: 11px; }
+  .boot-content pre { font-size: clamp(10px, 3.4vw, 13px); }
+  .boot-content pre .ts { display: none; }
+  .boot-content .boot-line {
+    display: flex;
+    align-items: baseline;
+    width: 100%;
+  }
+  .boot-content .boot-line .msg {
+    white-space: normal;            /* word-wrap safety net for tiny screens */
+    overflow-wrap: break-word;
+    min-width: 0;
+  }
+  .boot-content .boot-line .status {
+    margin-left: auto;              /* pin [ OK ]/[WARN] to the right */
+    padding-left: 1.5ch;
+    flex: 0 0 auto;
+  }
+}
 
 /* ============================================================
    SPLASH (autoplay) — phosphor logo reveal
@@ -900,7 +937,7 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
 <!-- ====================== BOOT (autoplay) ====================== -->
 <div class="layer" id="boot">
   <div class="boot-content">
-    <div class="head"><b>alan@barzilay</b>:~/sites/personal $ ./boot --landing</div>
+    <div class="head"><span class="prompt"><b>alan@barzilay</b>:~/sites/personal $</span> <span class="cmd">./boot --landing</span></div>
     <pre id="bootLog"></pre>
   </div>
 </div>
@@ -1181,24 +1218,73 @@ window.TEST = TEST;
 // ============================================================
 // BOOT LOGS
 // ============================================================
+// Single source of truth. `status` is the right-hand indicator; `wrap` lists
+// the author-preferred line breaks used only when the screen is too narrow.
 const BOOT_LOGS = [
-  ["ok",   "firmware revision 0x2b loaded"],
-  ["ok",   "mounting /dev/sda1, readonly: true"],
-  ["ok",   "loading modules                                          [ OK ]"],
-  ["warn", "unnecessarily fancy js to impress recruiters             [WARN]"],
-  ["warn", "sorry, I tried optimizing                                [WARN]"],
-  ["ok",   "phosphor lit                                             [ OK ]"],
-  ["ok",   ""],
-  ["ok",   "user=alan  shell=/bin/zsh  pwd=~/sites/personal"],
-  ["ok",   "status: alive · uptime: 31y 03m 14d"],
+  { kind:'ok',   body:"firmware revision 0x2b loaded" },
+  { kind:'ok',   body:"mounting /dev/sda1, readonly: true" },
+  { kind:'ok',   body:"loading modules", status:"[ OK ]" },
+  { kind:'warn', body:"unnecessarily fancy js to impress recruiters", status:"[WARN]",
+                 wrap:["unnecessarily fancy js", "to impress recruiters"] },
+  { kind:'warn', body:"sorry, I tried optimizing", status:"[WARN]" },
+  { kind:'ok',   body:"phosphor lit", status:"[ OK ]" },
+  { kind:'ok',   body:"" },
+  { kind:'ok',   body:"user=alan  shell=/bin/zsh  pwd=~/sites/personal",
+                 wrap:["user=alan shell=/bin/zsh", "pwd=~/sites/personal"] },
+  { kind:'ok',   body:"status: alive · uptime: 31y 03m 14d" },
 ];
+
+// Column the status indicator sits at on desktop (matches the original padding:
+// body padded to 57 + a 6-char indicator = 63-char field).
+const STATUS_PAD = 57;
+
+// How many monospace character columns fit in the boot-log's content box at the
+// current (clamped) font size. Measured live, so it's correct on any device and
+// independent of which webfont has finished loading.
+function measureColumns() {
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;';
+  probe.textContent = '0'.repeat(100);
+  bootLog.appendChild(probe);
+  const charW = probe.getBoundingClientRect().width / 100;
+  probe.remove();
+  return charW > 0 ? Math.floor(bootLog.clientWidth / charW) : Infinity;
+}
+
+// Expand the source into the concrete lines to render for the current viewport.
+//   Desktop → one line per entry, status folded back into the padded body so it
+//             renders exactly like the original (white-space:pre, no flex).
+//   Mobile  → status broken out as its own node; a `wrap` entry is split into
+//             the requested controlled breaks ONLY when the full line (tag +
+//             body + status) overflows `columns` — otherwise it stays one line.
+function buildBootLines(mobile, columns) {
+  const TAG = 7; // width of "[warn] " / "[ ok ] "
+  const out = [];
+  for (const e of BOOT_LOGS) {
+    if (!mobile) {
+      const text = e.status ? e.body.padEnd(STATUS_PAD) + e.status : e.body;
+      out.push({ kind: e.kind, body: text });
+      continue;
+    }
+    const need = TAG + e.body.length + (e.status ? e.status.length + 1 : 0);
+    if (e.wrap && need > columns) {
+      for (const part of e.wrap) out.push({ kind: e.kind, body: part, status: e.status });
+    } else {
+      out.push({ kind: e.kind, body: e.body, status: e.status });
+    }
+  }
+  return out;
+}
+
+let BOOT_LINES = [];
 
 function prepareBootLogs() {
   bootLog.innerHTML = '';
   const fragment = document.createDocumentFragment();
-  for (let i = 0; i < BOOT_LOGS.length; i++) {
-    const [kind, msg] = BOOT_LOGS[i];
+  for (let i = 0; i < BOOT_LINES.length; i++) {
+    const { kind, status } = BOOT_LINES[i];
     const lineDiv = document.createElement('div');
+    lineDiv.className = 'boot-line';
     lineDiv.style.display = 'none';
     
     const tsSpan = document.createElement('span');
@@ -1220,7 +1306,15 @@ function prepareBootLogs() {
     cursorSpan.textContent = '_';
     cursorSpan.style.display = 'none';
     lineDiv.appendChild(cursorSpan);
-    
+
+    if (status) {
+      const statusSpan = document.createElement('span');
+      statusSpan.className = (kind === 'warn' ? 'warn' : 'ok') + ' status';
+      statusSpan.textContent = status;
+      statusSpan.style.display = 'none';
+      lineDiv.appendChild(statusSpan);
+    }
+
     fragment.appendChild(lineDiv);
   }
   bootLog.appendChild(fragment);
@@ -1256,12 +1350,14 @@ function whenVisible() {
 async function sleep(ms) { await whenVisible(); return new Promise(r => setTimeout(r, ms)); }
 
 async function typeBootLogs() {
+  const mobile = window.matchMedia('(max-width: 768px)').matches;
+  BOOT_LINES = buildBootLines(mobile, mobile ? measureColumns() : 0);
   prepareBootLogs();
   const lines = bootLog.children;
-  for (let i = 0; i < BOOT_LOGS.length; i++) {
-    const [kind, msg] = BOOT_LOGS[i];
+  for (let i = 0; i < BOOT_LINES.length; i++) {
+    const msg = BOOT_LINES[i].body;
     const lineDiv = lines[i];
-    lineDiv.style.display = 'block';
+    lineDiv.style.display = '';   // '' → CSS decides (flex on phones, block on desktop)
     
     if (!msg) {
       await sleep(80);
@@ -1278,6 +1374,8 @@ async function typeBootLogs() {
     }
     
     cursorSpan.style.display = 'none';
+    const statusSpan = lineDiv.querySelector('.status');
+    if (statusSpan) statusSpan.style.display = '';
     await sleep(30 + Math.random() * 60);
   }
 }
