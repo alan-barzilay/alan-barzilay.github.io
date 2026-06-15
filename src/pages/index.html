@@ -982,12 +982,37 @@ const BOOT_LOGS = [
   ["ok",   "status: alive · uptime: 12y 03m 14d"],
 ];
 
-function lineToHtml(idx, kind, msg, partial) {
-  const ts = `[ 00:00:00.${String(60 + idx*90).padStart(4,'0')} ]`;
-  const tag = kind === "warn" ? `<span class="warn">[ warn]</span>` : `<span class="ok">[ ok ]</span>`;
-  const m = partial === undefined ? msg : msg.slice(0, partial);
-  const cursor = partial === undefined ? "" : `<span class="dim">_</span>`;
-  return `<span class="ts">${ts}</span>${tag} ${m}${cursor}\n`;
+function prepareBootLogs() {
+  bootLog.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < BOOT_LOGS.length; i++) {
+    const [kind, msg] = BOOT_LOGS[i];
+    const lineDiv = document.createElement('div');
+    lineDiv.style.display = 'none';
+    
+    const tsSpan = document.createElement('span');
+    tsSpan.className = 'ts';
+    tsSpan.textContent = `[ 00:00:00.${String(60 + i*90).padStart(4,'0')} ]`;
+    lineDiv.appendChild(tsSpan);
+    
+    const tagSpan = document.createElement('span');
+    tagSpan.className = kind === 'warn' ? 'warn' : 'ok';
+    tagSpan.textContent = kind === 'warn' ? '[ warn] ' : '[ ok ] ';
+    lineDiv.appendChild(tagSpan);
+    
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'msg';
+    lineDiv.appendChild(msgSpan);
+    
+    const cursorSpan = document.createElement('span');
+    cursorSpan.className = 'dim';
+    cursorSpan.textContent = '_';
+    cursorSpan.style.display = 'none';
+    lineDiv.appendChild(cursorSpan);
+    
+    fragment.appendChild(lineDiv);
+  }
+  bootLog.appendChild(fragment);
 }
 
 // ============================================================
@@ -1020,25 +1045,28 @@ function whenVisible() {
 async function sleep(ms) { await whenVisible(); return new Promise(r => setTimeout(r, ms)); }
 
 async function typeBootLogs() {
-  // incremental DOM: finished lines are appended once and never re-parsed;
-  // only the line currently being typed is re-rendered per keystroke.
-  // (the old version rebuilt the WHOLE log's innerHTML on every character — O(n²))
-  const doneEl = document.createElement('span');
-  const curEl = document.createElement('span');
-  bootLog.replaceChildren(doneEl, curEl);
+  prepareBootLogs();
+  const lines = bootLog.children;
   for (let i = 0; i < BOOT_LOGS.length; i++) {
     const [kind, msg] = BOOT_LOGS[i];
+    const lineDiv = lines[i];
+    lineDiv.style.display = 'block';
+    
     if (!msg) {
-      doneEl.insertAdjacentHTML('beforeend', lineToHtml(i, kind, ""));
       await sleep(80);
       continue;
     }
+    
+    const msgSpan = lineDiv.querySelector('.msg');
+    const cursorSpan = lineDiv.querySelector('.dim');
+    cursorSpan.style.display = 'inline';
+    
     for (let c = 0; c <= msg.length; c++) {
-      curEl.innerHTML = lineToHtml(i, kind, msg, c);
+      msgSpan.textContent = msg.slice(0, c);
       await sleep(2 + Math.random() * 5);
     }
-    curEl.innerHTML = '';
-    doneEl.insertAdjacentHTML('beforeend', lineToHtml(i, kind, msg));
+    
+    cursorSpan.style.display = 'none';
     await sleep(30 + Math.random() * 60);
   }
 }
@@ -1075,11 +1103,11 @@ async function runAutoplay() {
   // 5. start WebGL and warm up the renderer in the background (invisible)
   introPlaying = false;
 
-  // Wait 2 frames to ensure Three.js compile/first-frame render has completed off-screen
-  await new Promise(requestAnimationFrame);
-  if (introCancelled) return;
-  await new Promise(requestAnimationFrame);
-  if (introCancelled) return;
+  // Wait 4 frames to ensure Three.js compile/first-frame render has completed off-screen and settled
+  for (let i = 0; i < 4; i++) {
+    await new Promise(requestAnimationFrame);
+    if (introCancelled) return;
+  }
 
   // 6. Glitch Out splash screen inner content
   const canvas = document.getElementById('tunnel-canvas');
@@ -1895,7 +1923,15 @@ function projectTubeOpening() {
   const w = viewW, h = viewH;
   const cx = (cP.x * 0.5 + 0.5) * w, cy = (-cP.y * 0.5 + 0.5) * h;
   const ex = (eP.x * 0.5 + 0.5) * w, ey = (-eP.y * 0.5 + 0.5) * h;
-  return (lastOpening = { cx, cy, r: Math.hypot(ex - cx, ey - cy) });
+  const r = Math.hypot(ex - cx, ey - cy);
+  if (lastOpening === null) {
+    lastOpening = { cx, cy, r };
+  } else {
+    lastOpening.cx = cx;
+    lastOpening.cy = cy;
+    lastOpening.r = r;
+  }
+  return lastOpening;
 }
 
 // invert the camera's scroll→curve easing (see frame()) so we can ask "at what
