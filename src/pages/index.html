@@ -2275,7 +2275,7 @@ function frame(ts) {
   // tunnel camera: ease into the deep end so by tunnelEnd the camera is at
   // curve t ≈ 0.998 — we've travelled the full tube. Fog density takes over
   // ahead, leaving only the immediate tube walls visible at the screen borders.
-  if (tunnelVisible) {
+  if (tunnelVisible && !introPlaying) {
   let tCurve;
   if (p < PHASES.tunnelOut) {
     tCurve = lerp(0.001, 0.92, p / PHASES.tunnelOut);
