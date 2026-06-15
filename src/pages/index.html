@@ -1141,11 +1141,11 @@ const TEST = {
   // small radius to fullscreen as the camera scrolls toward the exit. Smoother
   // and more continuous than the old 3-step tiering.
   revealR0: 40,        // starting radius (px) of the reveal circle — small dot at the screen centre
-  revealStartP: 0.84,  // SCROLL position where the reveal begins to open (default: right after the bend, when we're looking down the barrel)
+  revealStartP: 0.82,  // SCROLL position where the reveal begins to open (default: right after the bend, when we're looking down the barrel)
   revealFullP: 0.905,  // SCROLL position where the reveal reaches fullscreen (default: right before the tube exit)
   revealAlign: 0.30,   // internal safety gate — suppress the reveal until we're roughly aligned down the barrel (kills bleed during the sharp bend)
   endBend: 50,         // sharp lateral bend added to the LAST stretch of the tube
-  endBendStart: 0.98,  // where along the tube the end-bend begins (0..1)
+  endBendStart: 0.92,  // where along the tube the end-bend begins (0..1)
   bendAngle: 90,       // direction of the bend in degrees (0=right, 90=up, 180=left, 270=down)
   // START BEND — mirror of the end-bend, on the FRONT of the tube (used by 1d).
   // Pushes the entrance sideways so the wall hides the distance at 0% scroll,
