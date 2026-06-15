@@ -826,6 +826,49 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
     transform: translateY(-4px);
   }
 }
+@media (max-width: 600px) or (max-height: 720px) {
+  #vapor {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 40px 16px 60px !important;
+  }
+  .vapor-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 24px !important;
+    margin: auto 0 !important;
+    width: 100% !important;
+  }
+  .vapor-content h1 {
+    font-size: clamp(36px, 8vw, 64px);
+    margin: 0 !important;
+  }
+  .vapor-posts {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .vapor-post {
+    padding: 16px 18px !important;
+  }
+  .vapor-post p {
+    font-size: 12px !important;
+  }
+  .vapor-post.blog-cta-card {
+    min-height: 90px !important;
+  }
+  .vapor-post.blog-cta-card h3 {
+    font-size: 18px !important;
+  }
+  .vapor-socials {
+    margin-top: 16px !important;
+    padding-bottom: 20px !important;
+  }
+}
 </style>
 </head>
 <body class="locked v-green-theme">
