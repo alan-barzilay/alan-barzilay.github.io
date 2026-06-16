@@ -47,8 +47,10 @@ window.QUALITY = QUALITY;
 // cached viewport size — refreshed on resize
 let viewW = window.innerWidth, viewH = window.innerHeight;
 
-const tunnelCanvas = document.getElementById('tunnel-canvas');
-const starCanvas = document.getElementById('showcase-canvas');
+// reassignable: a failed worker transfer leaves these canvases dead (control
+// already handed off), so the fallback replaces them with fresh nodes.
+let tunnelCanvas = document.getElementById('tunnel-canvas');
+let starCanvas = document.getElementById('showcase-canvas');
 
 // ?offscreen=0 forces the main-thread fallback renderer even where OffscreenCanvas
 // is supported — used to exercise/verify the fallback path on modern browsers.
@@ -156,8 +158,13 @@ if (supportsOffscreen) {
       applyShift(data.clear ? null : data.x, data.y);
     } else if (data.type === 'stats') {
       showStats(data);
+    } else if (data.type === 'initError') {
+      // the worker couldn't bring up WebGL — recover on the main thread
+      fallbackToMainThread();
     }
   };
+  // backstop for any uncaught worker error not surfaced as an initError message
+  worker.onerror = () => fallbackToMainThread();
 }
 
 // Boot the main-thread fallback scene. three.js + the scene module are loaded
@@ -179,6 +186,32 @@ async function initMainThread() {
     onStats: showStats,
   });
   return sceneApi;
+}
+
+// Recover from a worker that failed to initialize (or crashed): the canvases
+// were already transferred to the worker, so they can't be drawn to on the main
+// thread — replace them with fresh nodes, then bring up the main-thread scene.
+// renderTunnel / introPlaying carry the current autoplay state, so the scene
+// picks up wherever the boot sequence currently is.
+let fellBack = false;
+function fallbackToMainThread() {
+  if (fellBack || !supportsOffscreen) return;
+  fellBack = true;
+  if (worker) { worker.terminate(); worker = null; }
+  tunnelCanvas = replaceCanvas(tunnelCanvas);
+  starCanvas = replaceCanvas(starCanvas);
+  // the fresh canvases start from their CSS defaults — reset the change-detection
+  // caches so the scene's first frame writes every style afresh onto them.
+  lastHideNav = null; lastTunnelOpacity = -1; lastVaporVis = ''; lastVaporOpacity = '';
+  lastMask = ''; lastCe = -1; lastGlow = -1;
+  initMainThread();
+}
+function replaceCanvas(oldEl) {
+  const fresh = document.createElement('canvas');
+  fresh.id = oldEl.id;
+  fresh.className = oldEl.className;
+  oldEl.replaceWith(fresh);
+  return fresh;
 }
 
 // ============================================================

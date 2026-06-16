@@ -37,28 +37,36 @@ self.onmessage = function (e) {
   const data = e.data;
   switch (data.type) {
     case 'init':
-      sceneApi = createTunnelScene({
-        tunnelCanvas: data.canvas,
-        starCanvas: data.starCanvas,
-        width: data.width,
-        height: data.height,
-        dpr: data.dpr,
-        quality: QUALITY,
-        onDomUpdate: (s) => self.postMessage({
-          type: 'domUpdate',
-          hideNav: s.hideNav,
-          tunnelOpacity: s.tunnelOpacity,
-          vaporOpacity: s.vaporOpacity,
-          vaporVisibility: s.vaporVisibility,
-          mask: s.mask,
-          contentRise: s.contentRise,
-          glow: s.glow,
-        }),
-        onShift: (x, y) => self.postMessage(x === null ? { type: 'shift', clear: true } : { type: 'shift', x, y }),
-        onShadersReady: () => self.postMessage({ type: 'shadersReady' }),
-        onStats: (d) => self.postMessage({ type: 'stats', fps: d.fps, layers: d.layers, scroll: d.scroll }),
-      });
-      requestAnimationFrame(frame);
+      // WebGL context creation can fail inside a worker (driver/context limits,
+      // blocklists, etc.). Catch it and tell the main thread so it can fall back
+      // to the main-thread renderer — without this the transferred canvases
+      // would be stuck blank with no recovery.
+      try {
+        sceneApi = createTunnelScene({
+          tunnelCanvas: data.canvas,
+          starCanvas: data.starCanvas,
+          width: data.width,
+          height: data.height,
+          dpr: data.dpr,
+          quality: QUALITY,
+          onDomUpdate: (s) => self.postMessage({
+            type: 'domUpdate',
+            hideNav: s.hideNav,
+            tunnelOpacity: s.tunnelOpacity,
+            vaporOpacity: s.vaporOpacity,
+            vaporVisibility: s.vaporVisibility,
+            mask: s.mask,
+            contentRise: s.contentRise,
+            glow: s.glow,
+          }),
+          onShift: (x, y) => self.postMessage(x === null ? { type: 'shift', clear: true } : { type: 'shift', x, y }),
+          onShadersReady: () => self.postMessage({ type: 'shadersReady' }),
+          onStats: (d) => self.postMessage({ type: 'stats', fps: d.fps, layers: d.layers, scroll: d.scroll }),
+        });
+        requestAnimationFrame(frame);
+      } catch (err) {
+        self.postMessage({ type: 'initError', message: String((err && err.message) || err) });
+      }
       break;
 
     case 'scroll':
