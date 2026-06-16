@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { runAutoplay } from './landing/boot.js';
+import { currentCenterline } from './landing/centerline.js';
+import { initTweaksPanel } from './landing/tweaks.js';
 
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
@@ -81,244 +84,7 @@ let revealFocalX = null, revealFocalY = null, revealFocalValid = false;
 let starVelMulCurrent = 0.30; // eased star-speed multiplier (slow → full as we near the end)
 let alignSmooth = 0;          // low-passed camera→end alignment (kills per-frame jitter)
 window.TEST = TEST;
-
-// ============================================================
-// BOOT LOGS
-// ============================================================
-// Single source of truth. `status` is the right-hand indicator; `wrap` lists
-// the author-preferred line breaks used only when the screen is too narrow.
-const BOOT_LOGS = [
-  { kind:'ok',   body:"firmware revision 0x2b loaded" },
-  { kind:'ok',   body:"mounting /dev/sda1, readonly: true" },
-  { kind:'ok',   body:"loading modules", status:"[ OK ]" },
-  { kind:'warn', body:"unnecessarily fancy js to impress recruiters", status:"[WARN]",
-                 wrap:["unnecessarily fancy js", "to impress recruiters"] },
-  { kind:'warn', body:"sorry, I tried optimizing", status:"[WARN]" },
-  { kind:'ok',   body:"phosphor lit", status:"[ OK ]" },
-  { kind:'ok',   body:"" },
-  { kind:'ok',   body:"user=alan  shell=/bin/zsh  pwd=~/sites/personal",
-                 wrap:["user=alan shell=/bin/zsh", "pwd=~/sites/personal"] },
-  { kind:'ok',   body:"status: alive · uptime: 31y 03m 14d" },
-];
-
-// Column the status indicator sits at on desktop (matches the original padding:
-// body padded to 57 + a 6-char indicator = 63-char field).
-const STATUS_PAD = 57;
-
-// How many monospace character columns fit in the boot-log's content box at the
-// current (clamped) font size. Measured live, so it's correct on any device and
-// independent of which webfont has finished loading.
-function measureColumns() {
-  const probe = document.createElement('span');
-  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;';
-  probe.textContent = '0'.repeat(100);
-  bootLog.appendChild(probe);
-  const charW = probe.getBoundingClientRect().width / 100;
-  probe.remove();
-  return charW > 0 ? Math.floor(bootLog.clientWidth / charW) : Infinity;
-}
-
-// Expand the source into the concrete lines to render for the current viewport.
-//   Desktop → one line per entry, status folded back into the padded body so it
-//             renders exactly like the original (white-space:pre, no flex).
-//   Mobile  → status broken out as its own node; a `wrap` entry is split into
-//             the requested controlled breaks ONLY when the full line (tag +
-//             body + status) overflows `columns` — otherwise it stays one line.
-function buildBootLines(mobile, columns) {
-  const TAG = 7; // width of "[warn] " / "[ ok ] "
-  const out = [];
-  for (const e of BOOT_LOGS) {
-    if (!mobile) {
-      const text = e.status ? e.body.padEnd(STATUS_PAD) + e.status : e.body;
-      out.push({ kind: e.kind, body: text });
-      continue;
-    }
-    const need = TAG + e.body.length + (e.status ? e.status.length + 1 : 0);
-    if (e.wrap && need > columns) {
-      for (const part of e.wrap) out.push({ kind: e.kind, body: part, status: e.status });
-    } else {
-      out.push({ kind: e.kind, body: e.body, status: e.status });
-    }
-  }
-  return out;
-}
-
-let BOOT_LINES = [];
-
-function prepareBootLogs() {
-  bootLog.innerHTML = '';
-  const fragment = document.createDocumentFragment();
-  for (let i = 0; i < BOOT_LINES.length; i++) {
-    const { kind, status } = BOOT_LINES[i];
-    const lineDiv = document.createElement('div');
-    lineDiv.className = 'boot-line';
-    lineDiv.style.display = 'none';
-    
-    const tsSpan = document.createElement('span');
-    tsSpan.className = 'ts';
-    tsSpan.textContent = `[ 00:00:00.${String(60 + i*90).padStart(4,'0')} ]`;
-    lineDiv.appendChild(tsSpan);
-    
-    const tagSpan = document.createElement('span');
-    tagSpan.className = kind === 'warn' ? 'warn' : 'ok';
-    tagSpan.textContent = kind === 'warn' ? '[warn] ' : '[ ok ] ';
-    lineDiv.appendChild(tagSpan);
-    
-    const msgSpan = document.createElement('span');
-    msgSpan.className = 'msg';
-    lineDiv.appendChild(msgSpan);
-    
-    const cursorSpan = document.createElement('span');
-    cursorSpan.className = 'dim';
-    cursorSpan.textContent = '_';
-    cursorSpan.style.display = 'none';
-    lineDiv.appendChild(cursorSpan);
-
-    if (status) {
-      const statusSpan = document.createElement('span');
-      statusSpan.className = (kind === 'warn' ? 'warn' : 'ok') + ' status';
-      statusSpan.textContent = status;
-      statusSpan.style.display = 'none';
-      lineDiv.appendChild(statusSpan);
-    }
-
-    fragment.appendChild(lineDiv);
-  }
-  bootLog.appendChild(fragment);
-}
-
-// ============================================================
-// AUTOPLAY — boot → splash → reveal logo → unlock scroll
-// ============================================================
-const bootEl   = document.getElementById('boot');
-const bootLog  = document.getElementById('bootLog');
-const splashEl = document.getElementById('splash');
-const logoLeft = document.getElementById('logoLeft');
-const logoRight= document.getElementById('logoRight');
-const splashName = document.getElementById('splashName');
-const splashSub  = document.getElementById('splashSub');
-const tweaksPanel = document.getElementById('tweaks-panel');
-
-// B6: pause the autoplay/typing chain while the tab is hidden. rAF already
-// auto-throttles when backgrounded, but a setTimeout chain does not — so we
-// gate every sleep on visibility and resume from where we left off.
-function whenVisible() {
-  if (document.visibilityState === 'visible') return Promise.resolve();
-  return new Promise(res => {
-    const h = () => {
-      if (document.visibilityState === 'visible') {
-        document.removeEventListener('visibilitychange', h);
-        res();
-      }
-    };
-    document.addEventListener('visibilitychange', h);
-  });
-}
-async function sleep(ms) { await whenVisible(); return new Promise(r => setTimeout(r, ms)); }
-
-async function typeBootLogs() {
-  const mobile = window.matchMedia('(max-width: 768px)').matches;
-  BOOT_LINES = buildBootLines(mobile, mobile ? measureColumns() : 0);
-  prepareBootLogs();
-  const lines = bootLog.children;
-  for (let i = 0; i < BOOT_LINES.length; i++) {
-    const msg = BOOT_LINES[i].body;
-    const lineDiv = lines[i];
-    lineDiv.style.display = '';   // '' → CSS decides (flex on phones, block on desktop)
-    
-    if (!msg) {
-      await sleep(80);
-      continue;
-    }
-    
-    const msgSpan = lineDiv.querySelector('.msg');
-    const cursorSpan = lineDiv.querySelector('.dim');
-    cursorSpan.style.display = 'inline';
-    
-    for (let c = 0; c <= msg.length; c++) {
-      msgSpan.textContent = msg.slice(0, c);
-      await sleep(2 + Math.random() * 5);
-    }
-    
-    cursorSpan.style.display = 'none';
-    const statusSpan = lineDiv.querySelector('.status');
-    if (statusSpan) statusSpan.style.display = '';
-    await sleep(30 + Math.random() * 60);
-  }
-}
-
-async function runAutoplay() {
-  // 1. boot logs typing
-  await typeBootLogs();
-  await sleep(280);
-  if (introCancelled) return;
-
-  // 2. smooth handoff
-  splashEl.style.opacity = '1';
-  bootEl.style.transition = 'opacity 0.6s ease';
-  bootEl.style.opacity = '0';
-  await sleep(620);
-  bootEl.style.visibility = 'hidden';
-  if (introCancelled) return;
-
-  // 3. show name + sub
-  splashName.classList.add('in');
-  await sleep(260);
-  splashSub.classList.add('in');
-  await sleep(700);
-  if (introCancelled) return;
-
-  // 4. trigger logo reveal
-  await sleep(120);
-  logoLeft.classList.add('go');
-  logoRight.classList.add('go');
-  document.querySelector('.logo-wrap').classList.add('in');
-  await sleep(1600);
-  if (introCancelled) return;
-
-  // 5. start WebGL and warm up the renderer in the background (invisible)
-  renderTunnel = true;
-  introPlaying = false;
-
-  // Wait 4 frames to ensure Three.js compile/first-frame render has completed off-screen and settled
-  for (let i = 0; i < 4; i++) {
-    await new Promise(requestAnimationFrame);
-    if (introCancelled) return;
-  }
-  // Pause rendering during the glitch animation to save CPU/GPU resources
-  renderTunnel = false;
-
-  // 6. Glitch Out splash screen inner content
-  const canvas = document.getElementById('tunnel-canvas');
-  const tunnelUI = document.getElementById('tunnel-ui');
-  const splashInner = document.getElementById('splashInner');
-
-  if (splashInner) {
-    splashInner.classList.add('glitch-out');
-  }
-  await sleep(450);
-  if (introCancelled) return;
-
-  // Resume rendering permanently now that the splash screen is gone
-  renderTunnel = true;
-
-  // Zero-blend hard cut to instantly reveal the canvas and chrome
-  canvas.style.transition = 'none';
-  tunnelUI.style.transition = 'none';
-  splashEl.style.transition = 'none';
-
-  canvas.style.opacity = '1';
-  tunnelUI.style.opacity = '1';
-  splashEl.style.opacity = '0';
-  splashEl.style.visibility = 'hidden';
-  splashEl.style.display = 'none';
-
-  // 7. unlock scroll & show chrome
-  document.body.classList.remove('locked');
-  document.getElementById('top').classList.add('on');
-  document.getElementById('pbar').classList.add('on');
-  document.getElementById('hint').classList.add('on');
-}
+// Boot sequence logic modularized to src/scripts/landing/boot.js
 
 // ============================================================
 // TUNNEL (three.js phosphor green) — scroll-driven
@@ -360,184 +126,7 @@ const camera = new THREE.PerspectiveCamera(60, viewW / viewH, 0.1, 1000);
 // Track whether fog is enabled (for toggle)
 let fogEnabled = true;
 
-const N = 120;
-function buildBasePoints() {
-  const pts = [];
-  for (let i = 0; i < N; i++) {
-    const t = i / (N - 1);
-    const z = -i * 4.5;
-    const x = Math.sin(t * Math.PI * 4) * 8 + Math.sin(t * Math.PI * 9) * 2;
-    const y = Math.cos(t * Math.PI * 3) * 5 + Math.sin(t * Math.PI * 11) * 1.5;
-    pts.push(new THREE.Vector3(x, y, z));
-  }
-  return pts;
-}
-
-// ============================================================
-// SHARP SNAKE CENTERLINES — variant tube shapes (1, 4, 5 from the explorer).
-// The heading oscillates (yaw + pitch) hard enough that the tube is always
-// turning, so the inner wall blocks the view down the barrel — no far white
-// pile-up — while keeping the lively wobble. Switchable live via the selector.
-// ============================================================
-function snakePath({ yawAmp, yawFreq, pitchAmp = 0.6, pitchFreq = 2, pitchPhase = Math.PI / 3, endBoost = 1, seg = 4.5,
-                     calmStart = null, calmEnd = 0.92, calmFloor = 0.3, pitchCalmFloor = null, segEndBoost = 1, yawPhase = 0 }) {
-  const pts = [];
-  const pos = new THREE.Vector3(0, 0, 0);
-  const dir = new THREE.Vector3();
-  const pFloor = pitchCalmFloor == null ? calmFloor : pitchCalmFloor;
-  for (let i = 0; i < N; i++) {
-    const t = i / (N - 1);
-    const amp = 1 + (endBoost - 1) * t;
-    // CALM TAPER — ease the wobble amplitude down over [calmStart, calmEnd].
-    // The yaw (yawFreq) and pitch (pitchFreq) beat drifts into ~90° quadrature
-    // around the back half of the tube — a forward heading that traces a circle,
-    // which reads as a nauseating barrel-roll right around chapter 5. Tapering
-    // the amplitude there flattens the path into a gentle S that matches the
-    // calmer feel of the earlier chapters. Pitch is tapered harder than yaw
-    // because vertical sway drives the roll the most.
-    let yawT = amp, pitchT = amp;
-    if (calmStart !== null && t > calmStart) {
-      const u = Math.min(1, (t - calmStart) / (calmEnd - calmStart));
-      const ease = u * u * (3 - 2 * u); // smoothstep
-      yawT   = amp * (1 - (1 - calmFloor) * ease);
-      pitchT = amp * (1 - (1 - pFloor)   * ease);
-    }
-    const yaw   = yawAmp   * yawT   * Math.sin(2 * Math.PI * yawFreq   * t + yawPhase);
-    const pitch = pitchAmp * pitchT * Math.sin(2 * Math.PI * pitchFreq * t + pitchPhase);
-    dir.set(
-      Math.sin(yaw) * Math.cos(pitch),
-      Math.sin(pitch),
-      -Math.cos(yaw) * Math.cos(pitch)
-    );
-    // SEG STRETCH — grow the step length toward the exit (segEndBoost > 1) so the
-    // distant coils spread out along the view axis. Far tube sections separate in
-    // depth instead of folding across one another down the barrel (self-overlap).
-    const segT = seg * (1 + (segEndBoost - 1) * t);
-    if (i > 0) pos.addScaledVector(dir, segT);
-    pts.push(pos.clone());
-  }
-  return pts;
-}
-
-// STAIRCASE / ZIGZAG — turns ONE axis at a time. yaw swings left↔right while
-// pitch holds; then pitch steps DOWN while yaw holds; repeat (left, down, right,
-// down …). The staircase term (φ − ½·sin2φ) is monotonic and FLAT exactly at the
-// yaw extremes (where yaw is paused) and steepest at the yaw zero-crossings, so
-// the two axes never turn at the same time → the tube bends like a chain of
-// elbows instead of a helix → no spin, no barf. Pitch only ever descends, so the
-// far tube drifts off the bottom of the view: its accumulation direction differs
-// from the near weave and the two stop overlapping down the barrel.
-function stairPath({ yawAmp = 1.2, turns = 3, pitchDrop = 0.85, seg = 4.5,
-                     calmStart = null, calmEnd = 0.92, calmFloor = 0.3 }) {
-  const pts = [];
-  const pos = new THREE.Vector3(0, 0, 0);
-  const dir = new THREE.Vector3();
-  const span = 2 * Math.PI * turns;
-  for (let i = 0; i < N; i++) {
-    const t = i / (N - 1);
-    const ph = span * t;
-    let amp = 1;
-    if (calmStart !== null && t > calmStart) {
-      const u = Math.min(1, (t - calmStart) / (calmEnd - calmStart));
-      const ease = u * u * (3 - 2 * u);
-      amp = 1 - (1 - calmFloor) * ease;
-    }
-    const yaw   = yawAmp * amp * Math.sin(ph);
-    const pitch = -pitchDrop * ((ph - 0.5 * Math.sin(2 * ph)) / span);
-    dir.set(
-      Math.sin(yaw) * Math.cos(pitch),
-      Math.sin(pitch),
-      -Math.cos(yaw) * Math.cos(pitch)
-    );
-    if (i > 0) pos.addScaledVector(dir, seg);
-    pts.push(pos.clone());
-  }
-  return pts;
-}
-const TUBE_VARIANTS = {
-  current: { label: '0 · current', make: () => applyEndBend(buildBasePoints()) },
-  // ORIGINAL sharp snake — UNTOUCHED, kept as the reference to compare against
-  // (no calm, no end-bend). This is the one whose chapter-4 stretch barfs.
-  v1orig: { label: '1 · original snake (ref)', make: () => snakePath({ yawAmp: 1.2, yawFreq: 2.5, pitchAmp: 0.5, pitchFreq: 1.8 }) },
-
-  // ---- fresh attempts. ALL keep the synced end-bend (applyEndBend), and ALL
-  //      target the barrel-roll that peaks around CHAPTER 4 (curve t ≈ 0.5),
-  //      where the yaw(2.5)/pitch(1.8) beat drifts into 90° quadrature and the
-  //      heading traces a circle — which the eye reads as a nauseating roll. ----
-
-  // A · PLANAR — pitch locked to the yaw frequency AND in phase, so (yaw,pitch)
-  // traces a straight line, not an ellipse. The heading sweeps in ONE plane:
-  // zero torsion, zero roll. Cleanest cure, still a lively diagonal snake.
-  v1a: { label: '1a · planar (no roll)',  make: () => applyEndBend(snakePath({ yawAmp: 1.25, yawFreq: 2.5, pitchAmp: 0.5, pitchFreq: 2.5, pitchPhase: 0 })) },
-
-  // B · LOW-PITCH — keep the sharp horizontal snake, cut the vertical sway right
-  // down. Barely any pitch → barely any roll, while the side-to-side stays sharp.
-  v1b: { label: '1b · low-pitch snake',   make: () => applyEndBend(snakePath({ yawAmp: 1.35, yawFreq: 2.5, pitchAmp: 0.13, pitchFreq: 1.8 })) },
-
-  // C · CALM FROM CH4 — original character through chapters 1–3, then taper the
-  // wobble from ~chapter 4 onward so the mid/back stretch settles into a gentle S.
-  v1c: { label: '1c · calm from ch4',     make: () => applyEndBend(snakePath({ yawAmp: 1.2, yawFreq: 2.5, pitchAmp: 0.5, pitchFreq: 1.8, calmStart: 0.36, calmEnd: 0.85, calmFloor: 0.32, pitchCalmFloor: 0.15 })) },
-
-  // D · SLOW BEAT — fewer, longer turns. The yaw/pitch quadrature point is spread
-  // out and gentle instead of a tight corkscrew, so nothing spins fast enough to barf.
-  // EXTENDED FRONT: applyStartBend (live-tunable from the panel) offsets the entrance
-  // so the distance is hidden at 0% and revealed as the camera rounds the lead-in bend.
-  v1d: { label: '1d · slow beat + front bend', make: () => applyStartBend(applyEndBend(snakePath({ yawAmp: 1.2, yawFreq: 1.5, pitchAmp: 0.42, pitchFreq: 1.1 }))) },
-  // The same slow beat WITHOUT the front bend — restored for side-by-side comparison.
-  v1dplain: { label: '1d · slow beat (plain)', make: () => applyEndBend(snakePath({ yawAmp: 1.2, yawFreq: 1.5, pitchAmp: 0.42, pitchFreq: 1.1 })) },
-
-  // E · STAIRCASE — bends one axis at a time (left, down, right, down …) so it
-  // never corkscrews; the steady descent declutters the far view. See stairPath.
-  v1e: { label: '1e · staircase',         make: () => applyEndBend(stairPath({ yawAmp: 1.2, turns: 3, pitchDrop: 0.85 })) },
-
-  v4: { label: '4 · sharp toward exit', make: () => snakePath({ yawAmp: 1.0, yawFreq: 2.6, pitchAmp: 0.6, pitchFreq: 2, endBoost: 1.9 }) },
-  v5: { label: '5 · dense snake',      make: () => snakePath({ yawAmp: 1.1, yawFreq: 4, pitchAmp: 0.6, pitchFreq: 3.2 }) },
-};
 let activeTube = 'v1d';
-function currentCenterline() { return (TUBE_VARIANTS[activeTube] || TUBE_VARIANTS.v1orig).make(); }
-
-// Optional SHARP BEND on the final stretch — applied as an additive deformation
-// on top of WHATEVER base centerline you have, so the far opening stays hidden
-// behind the tube wall until the camera rounds the corner near the very end.
-// Works with any tube form; set TEST.endBend = 0 to get the original shape back.
-function applyEndBend(pts) {
-  const amt = TEST.endBend, startF = TEST.endBendStart;
-  if (!amt) return pts;
-  const n = pts.length;
-  const a = TEST.bendAngle * Math.PI / 180;
-  const dir = new THREE.Vector3(Math.cos(a), Math.sin(a), 0); // unit vector in the screen plane
-  return pts.map((p, i) => {
-    const t = i / (n - 1);
-    if (t <= startF) return p;
-    const u = (t - startF) / (1 - startF); // 0..1 across the bend zone
-    const k = u * u;                        // accelerating ⇒ sharp right at the end
-    return p.clone().addScaledVector(dir, amt * k);
-  });
-}
-
-// START BEND — a faithful MIRROR of applyEndBend, applied to the FRONT of the
-// tube. Where the end-bend kicks the last `1-endBendStart` of the tube sideways
-// (k = u²) so the exit hides behind the wall, this kicks the first `startBendLen`
-// sideways (k = (1-u)², the mirror) so the ENTRANCE wall hides the distance at
-// 0% scroll. The offset eases to zero by `startBendLen`, so the rest of the tube
-// is smoothly revealed as the camera rounds the lead-in bend (≈ chapters 1→2).
-// All three knobs (amount / length / angle) live in TEST and are panel-tunable.
-function applyStartBend(pts, opts = {}) {
-  const amt    = opts.amt    != null ? opts.amt    : TEST.startBend;
-  const until  = opts.until  != null ? opts.until  : TEST.startBendLen;
-  const angle  = opts.angle  != null ? opts.angle  : TEST.startBendAngle;
-  if (!amt) return pts;
-  const n = pts.length;
-  const a = angle * Math.PI / 180;
-  const dir = new THREE.Vector3(Math.cos(a), Math.sin(a), 0);
-  return pts.map((p, i) => {
-    const t = i / (n - 1);
-    if (t >= until) return p;
-    const u = t / until;            // 0 at the very start → 1 at `until`
-    const k = (1 - u) * (1 - u);    // mirror of the end-bend's u² — sharp at entrance
-    return p.clone().addScaledVector(dir, amt * k);
-  });
-}
 
 // ---- per-curve caches + scratch vectors (perf) ----
 // Everything derivable from the curve alone is computed ONCE per tube build:
@@ -647,7 +236,7 @@ function setLumGain(g) {
 }
 let tubeMesh1 = null, tubeMesh2 = null;
 function buildTube() {
-  curve = new THREE.CatmullRomCurve3(currentCenterline(), false, 'catmullrom', 0.5);
+  curve = new THREE.CatmullRomCurve3(currentCenterline(activeTube, TEST), false, 'catmullrom', 0.5);
   refreshCurveCache();
   if (tubeMesh1) { scene.remove(tubeMesh1); tubeMesh1.geometry.dispose(); }
   if (tubeMesh2) { scene.remove(tubeMesh2); tubeMesh2.geometry.dispose(); }
@@ -673,59 +262,8 @@ function requestTubeRebuild() {
 }
 // initial tube is built once `rings` exist (see after the ring setup below)
 
-// ============================================================
-// BLEND MODE CONTROLS
-// ============================================================
-const blendModeButtons = document.querySelectorAll('#blendModeOptions button');
-blendModeButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const mode = btn.getAttribute('data-blend');
-    setBlendMode(mode);
-    blendModeButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
-});
-
-// luminosity gain slider — drives the soft-add per-ray contribution
-const lumGainSlider = document.getElementById('lumGainSlider');
-const lumGainVal = document.getElementById('lumGainVal');
-lumGainSlider.addEventListener('input', () => {
-  const g = parseFloat(lumGainSlider.value);
-  setLumGain(g);
-  lumGainVal.textContent = g.toFixed(2);
-});
-
-// ============================================================
-// BACKGROUND COLOR TOGGLE
-// The WebGL canvas is transparent (clear alpha = 0) so the starfield can show
-// through — changing the renderer clear color alone is invisible. The REAL
-// background is the <body> CSS color and the scene FOG color (distant geometry
-// fades into the fog). So we toggle both.
-//   dark theme: #070c0a   ·   pure black: #000000
-// ============================================================
-const bgToggleBtn = document.getElementById('togglePureBlack');
-bgToggleBtn.addEventListener('click', () => {
-  pureBlackBg = !pureBlackBg;
-  const hex = pureBlackBg ? '#000000' : '#070c0a';
-  document.body.style.background = hex;
-  scene.fog.color.set(hex);
-  bgToggleBtn.classList.toggle('active');
-  bgToggleBtn.textContent = pureBlackBg ? 'bg: pure black' : 'bg: dark theme';
-});
-
-// ============================================================
-// DARKER RAYS TOGGLE
-// ============================================================
+// Tweaks UI handlers extracted to ./landing/tweaks.js
 let darkerRaysVisible = true;
-const toggleBtn = document.getElementById('toggleDarkerRays');
-toggleBtn.addEventListener('click', () => {
-  darkerRaysVisible = !darkerRaysVisible;
-  if (tubeMesh2) {
-    tubeMesh2.visible = darkerRaysVisible;
-  }
-  toggleBtn.classList.toggle('active');
-  toggleBtn.textContent = darkerRaysVisible ? 'darker rays: ON' : 'darker rays: OFF';
-});
 
 const CHAPTERS = [
   { id: "intro",    label: "intro",       at: 0.05, pos: "pos-left",
@@ -834,6 +372,16 @@ function layoutRings() {
   });
 }
 buildTube(); // builds the tube meshes AND lays out the rings on the curve
+
+initTweaksPanel({
+  TEST,
+  callbacks: {
+    setActiveTube: (tube) => { activeTube = tube; buildTube(); },
+    setBlendMode: (mode) => { setBlendMode(mode); },
+    setLumGain: (val) => { setLumGain(val); },
+    requestTubeRebuild: () => { requestTubeRebuild(); }
+  }
+});
 
 // White particles inside the tube
 const ptGeo = new THREE.BufferGeometry();
@@ -1547,7 +1095,37 @@ function initAutoplay() {
   window.scrollTo(0, 0);
   updateScrollMax();
   updateScroll();
-  setTimeout(runAutoplay, 200);
+
+  const dom = {
+    bootLog: document.getElementById('bootLog'),
+    bootEl: document.getElementById('boot'),
+    splashEl: document.getElementById('splash'),
+    logoLeft: document.getElementById('logoLeft'),
+    logoRight: document.getElementById('logoRight'),
+    splashName: document.getElementById('splashName'),
+    splashSub: document.getElementById('splashSub'),
+    tweaksPanel: document.getElementById('tweaks-panel'),
+    canvas: document.getElementById('tunnel-canvas'),
+    tunnelUI: document.getElementById('tunnel-ui'),
+    splashInner: document.getElementById('splashInner'),
+    top: document.getElementById('top'),
+    pbar: document.getElementById('pbar'),
+    hint: document.getElementById('hint'),
+  };
+
+  const state = {
+    get introCancelled() { return introCancelled; },
+    set introCancelled(val) { introCancelled = val; },
+    get introPlaying() { return introPlaying; },
+    set introPlaying(val) { introPlaying = val; },
+  };
+
+  const callbacks = {
+    setRenderTunnel: (val) => { renderTunnel = val; },
+    onComplete: () => {}
+  };
+
+  setTimeout(() => runAutoplay(dom, state, callbacks), 200);
 }
 
 if (document.readyState !== 'loading') {
@@ -1593,47 +1171,5 @@ colorOptions.forEach(option => {
 // Initialize on page load
 loadCircleColor();
 
-// ============================================================
-// TUBE SHAPE SELECTOR — swap the live tunnel centerline
-// ============================================================
-(function () {
-  const wrap = document.getElementById('tubeOptions');
-  if (!wrap) return;
-  wrap.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      activeTube = btn.getAttribute('data-tube');
-      wrap.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-      buildTube();
-    });
-  });
-})();
-
-// ============================================================
-// START-BEND SLIDERS — live-tune the front lead-in bend (used by 1d).
-// Each input writes a TEST.* param and rebuilds the tube on the next frame.
-// ============================================================
-(function () {
-  const amt = document.getElementById('sbAmt');
-  const len = document.getElementById('sbLen');
-  const ang = document.getElementById('sbAng');
-  if (!amt || !len || !ang) return;
-  const amtVal = document.getElementById('sbAmtVal');
-  const lenVal = document.getElementById('sbLenVal');
-  const angVal = document.getElementById('sbAngVal');
-  amt.addEventListener('input', () => {
-    TEST.startBend = parseFloat(amt.value);
-    amtVal.textContent = amt.value;
-    requestTubeRebuild();
-  });
-  len.addEventListener('input', () => {
-    TEST.startBendLen = parseFloat(len.value);
-    lenVal.textContent = parseFloat(len.value).toFixed(2);
-    requestTubeRebuild();
-  });
-  ang.addEventListener('input', () => {
-    TEST.startBendAngle = parseFloat(ang.value);
-    angVal.textContent = ang.value + '°';
-    requestTubeRebuild();
-  });
-})();
+// Tweaks panel sliders & selectors modularized to tweaks.js
 

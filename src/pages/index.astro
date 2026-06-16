@@ -2,9 +2,11 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import "../styles/home.css";
 
-import GithubLogo from "../images/SVGs/github-mark-white.svg";
-import LinkedinLogo from "../images/SVGs/linkedin.svg";
-import RssLogo from "../images/SVGs/rss.svg";
+import BootScreen from "../components/landing/BootScreen.astro";
+import SplashScreen from "../components/landing/SplashScreen.astro";
+import TunnelStage from "../components/landing/TunnelStage.astro";
+import TweaksPanel from "../components/landing/TweaksPanel.astro";
+import VaporOutro from "../components/landing/VaporOutro.astro";
 
 const title = "Alan Barzilay — Developer · Researcher · Maker";
 const description = "Alan Barzilay - Developer, researcher, and maker. ML / NLP by trade. Arch, Debian, NixOS sysadmin, and open-source contributor.";
@@ -13,67 +15,9 @@ const description = "Alan Barzilay - Developer, researcher, and maker. ML / NLP 
 <BaseLayout title={title} description={description} bodyClass="locked v-green-theme" activeFonts={["outfit", "jetbrains-mono"]}>
   <div class="scroller"></div>
 
-  <!-- ====================== BOOT (autoplay) ====================== -->
-  <div class="layer" id="boot">
-    <div class="boot-content">
-      <div class="head"><span class="prompt"><b>alan@barzilay</b>:~/sites/personal $</span> <span class="cmd">./boot --landing</span></div>
-      <pre id="bootLog"></pre>
-    </div>
-  </div>
-
-  <!-- ====================== SPLASH (autoplay) — phosphor logo ====================== -->
-  <div class="layer" id="splash">
-    <div class="splash-inner" id="splashInner">
-      <div class="logo-wrap">
-        <!-- left trace -->
-        <div class="logo-half left" id="logoLeft">
-          <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
-            <g transform="translate(13.101604,-35.573723)">
-              <path d="M -7.9846602,67.484737 H 10.778432 c 0.3086,0 0.6001,-0.1426 0.7896,-0.3862 l 7.460031,-9.627573 h 14.680346 c 0.4473,1.7202 1.9995,3 3.8579,3 2.2056,0 4,-1.7944 4,-4 0,-2.2056 -1.7944,-4 -4,-4 -1.8584,0 -3.4106,1.2798 -3.8579,3 H 18.538763 c -0.3086,0 -0.6001,0.1426 -0.789601,0.3862 l -7.46003,9.627573 H -7.9846602 c -0.5522,0 -1,0.4478 -1,1 0,0.5522 0.4478,1 1,1 z M 37.566309,54.470964 c 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 z"/>
-            </g>
-          </svg>
-        </div>
-        <!-- right trace -->
-        <div class="logo-half right" id="logoRight">
-          <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
-            <g transform="translate(13.101604,-35.573723)">
-              <path d="M 78.301524,57.322218 H 62.709556 l -7.25496,-14.126192 c -0.1895,-0.2436 -0.481,-0.386141 -0.7896,-0.3862 l -26.506279,-0.005 c -0.4473,-1.7202 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7944 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 26.016979,0.005 5.99956,12.512392 h -8.873732 c -0.3262,0 -0.6323,0.1592 -0.8193,0.4268 L 42.795361,68.75591 27.954427,68.76903 c -0.4473,-1.7205 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7939 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 15.361434,-0.01312 c 0.3262,-2.79e-4 0.6323,-0.1592 0.8193,-0.4268 l 7.686863,-11.006892 h 26.4795 c 0.5522,0 1,-0.4473 1,-1 0,-0.5527 -0.4478,-1 -1,-1 z M 24.300817,45.804787 c -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 z m -0.204292,25.964246 c -1.103,0 -2,-0.8975 -2,-2 0,-1.1025 0.897,-2 2,-2 1.103,0 2,0.8975 2,2 0,1.1025 -0.897,2 -2,2 z"/>
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="splash-name" id="splashName">alan barzilay<span class="dot">.</span></div>
-      <div class="splash-sub" id="splashSub">developer · researcher · maker</div>
-    </div>
-    <div class="splash-inner splash-glitch" id="splashInnerGlitch" aria-hidden="true">
-      <div class="logo-wrap">
-        <!-- left trace -->
-        <div class="logo-half left">
-          <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
-            <g transform="translate(13.101604,-35.573723)">
-              <path d="M -7.9846602,67.484737 H 10.778432 c 0.3086,0 0.6001,-0.1426 0.7896,-0.3862 l 7.460031,-9.627573 h 14.680346 c 0.4473,1.7202 1.9995,3 3.8579,3 2.2056,0 4,-1.7944 4,-4 0,-2.2056 -1.7944,-4 -4,-4 -1.8584,0 -3.4106,1.2798 -3.8579,3 H 18.538763 c -0.3086,0 -0.6001,0.1426 -0.789601,0.3862 l -7.46003,9.627573 H -7.9846602 c -0.5522,0 -1,0.4478 -1,1 0,0.5522 0.4478,1 1,1 z M 37.566309,54.470964 c 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 z"/>
-            </g>
-          </svg>
-        </div>
-        <!-- right trace -->
-        <div class="logo-half right">
-          <svg viewBox="0 0 96.520073 42.426407" aria-hidden="true">
-            <g transform="translate(13.101604,-35.573723)">
-              <path d="M 78.301524,57.322218 H 62.709556 l -7.25496,-14.126192 c -0.1895,-0.2436 -0.481,-0.386141 -0.7896,-0.3862 l -26.506279,-0.005 c -0.4473,-1.7202 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7944 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 26.016979,0.005 5.99956,12.512392 h -8.873732 c -0.3262,0 -0.6323,0.1592 -0.8193,0.4268 L 42.795361,68.75591 27.954427,68.76903 c -0.4473,-1.7205 -1.9995,-3 -3.8579,-3 -2.2056,0 -4,1.7939 -4,4 0,2.2061 1.7944,4 4,4 1.8584,0 3.4106,-1.2795 3.8579,-3 l 15.361434,-0.01312 c 0.3262,-2.79e-4 0.6323,-0.1592 0.8193,-0.4268 l 7.686863,-11.006892 h 26.4795 c 0.5522,0 1,-0.4473 1,-1 0,-0.5527 -0.4478,-1 -1,-1 z M 24.300817,45.804787 c -1.103,0 -2,-0.897 -2,-2 0,-1.103 0.897,-2 2,-2 1.103,0 2,0.897 2,2 0,1.103 -0.897,2 -2,2 z m -0.204292,25.964246 c -1.103,0 -2,-0.8975 -2,-2 0,-1.1025 0.897,-2 2,-2 1.103,0 2,0.8975 2,2 0,1.1025 -0.897,2 -2,2 z"/>
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="splash-name">alan barzilay<span class="dot">.</span></div>
-      <div class="splash-sub">developer · researcher · maker</div>
-    </div>
-  </div>
-
-  <!-- ====================== TUNNEL ====================== -->
-  <canvas id="tunnel-canvas"></canvas>
-  <div class="layer" id="tunnel-ui">
-    <div id="cardStage"></div>
-  </div>
+  <BootScreen />
+  <SplashScreen />
+  <TunnelStage />
 
   <div class="top" id="top">
     <div class="brand">alan barzilay<span class="d">.</span></div>
@@ -95,111 +39,8 @@ const description = "Alan Barzilay - Developer, researcher, and maker. ML / NLP 
     <span class="pct"><span id="pPct">0%</span></span>
   </div>
 
-  <div id="tweaks-panel" style="display: none;">
-    <h4>Circle Color</h4>
-    <div class="color-options">
-      <div class="color-option active" data-color="#6fc89a" title="Green (default)"></div>
-      <div class="color-option" data-color="#F4B182" title="Orange (tube accent)"></div>
-      <div class="color-option" data-color="#b8f0d0" title="Bright Green"></div>
-    </div>
-    <h4 style="margin-top:14px;">Tube Shape</h4>
-    <div class="tube-options" id="tubeOptions">
-      <button data-tube="v1c">1c · calm from ch4</button>
-      <button data-tube="v1a">1a · planar (no roll)</button>
-      <button data-tube="v1b">1b · low-pitch snake</button>
-      <button data-tube="v1d" class="active">1d · slow beat (+front bend)</button>
-      <button data-tube="v1dplain">1d · slow beat (plain)</button>
-      <button data-tube="v1e">1e · staircase (L-down-R-down)</button>
-      <button data-tube="v1orig">1 · original snake (ref)</button>
-      <button data-tube="v4">4 · sharp toward exit</button>
-      <button data-tube="v5">5 · dense snake</button>
-      <button data-tube="current">0 · current (live)</button>
-    </div>
-    <h4 style="margin-top:14px;">Start Bend <span style="float:right; color:rgba(255,255,255,0.4); font-size:9px; letter-spacing:0; text-transform:none;">1d</span></h4>
-    <p style="font-family:var(--mono); font-size:9px; line-height:1.5; color:rgba(255,255,255,0.4); margin:0;">mirror of the end-bend, on the tube entrance. hides the distance at 0%, reveals as you round it.</p>
-    <label class="sb-label">amount<span id="sbAmtVal">15</span></label>
-    <input type="range" id="sbAmt" min="0" max="180" step="5" value="15" />
-    <label class="sb-label">length<span id="sbLenVal">0.10</span></label>
-    <input type="range" id="sbLen" min="0.02" max="0.40" step="0.01" value="0.10" />
-    <label class="sb-label">angle<span id="sbAngVal">260°</span></label>
-    <input type="range" id="sbAng" min="0" max="360" step="5" value="260" />
-    <h4 style="margin-top:14px;">Blend Mode</h4>
-    <div class="tube-options" id="blendModeOptions">
-      <button data-blend="additive" class="active">additive → white</button>
-      <button data-blend="screen">screen (soft cap)</button>
-      <button data-blend="softadd">soft-add (gain)</button>
-      <button data-blend="average">average (hard cap)</button>
-      <button data-blend="tubecolor">tube color (flat)</button>
-      <button data-blend="lighten">lighten → white</button>
-      <button data-blend="normal">normal → bg</button>
-      <button data-blend="multiply">multiply → black</button>
-      <button data-blend="darken">darken → black</button>
-      <button data-blend="subtract">subtract</button>
-      <button data-blend="difference">difference</button>
-    </div>
-    <h4 style="margin-top:14px;">Luminosity Gain<span id="lumGainVal" style="float:right; color:rgba(255,255,255,0.55);">0.50</span></h4>
-    <input type="range" id="lumGainSlider" min="0.05" max="1" step="0.05" value="0.5" style="width:100%; accent-color: var(--phos-bright); cursor:pointer;" />
-    <p style="font-family:var(--mono); font-size:9px; line-height:1.5; color:rgba(255,255,255,0.4); margin:2px 0 0;">affects soft-add: how much each overlapping ray adds</p>
-    <h4 style="margin-top:14px;">Background</h4>
-    <div class="tube-options">
-      <button id="togglePureBlack" style="width: 100%;">bg: dark theme</button>
-    </div>
-    <h4 style="margin-top:14px;">Visibility</h4>
-    <div class="tube-options">
-      <button id="toggleDarkerRays" class="active" style="width: 100%;">darker rays: ON</button>
-    </div>
-  </div>
-
-  <!-- ====================== OUTRO ====================== -->
-  <div class="layer" id="vapor">
-    <!-- outro canvas -->
-    <canvas class="bg-canvas" id="showcase-canvas"></canvas>
-    <div id="vaporGlow"></div>
-
-    <div class="vapor-content">
-      <h1>continue <em>reading.</em></h1>
-
-      <div class="vapor-posts">
-        <a class="vapor-post" href="/blog/making_website_in_2025">
-          <div class="meta"><span>2025 · 12 · 04</span></div>
-          <h3>making a website in 2025</h3>
-          <p>obligatory why bother first post.</p>
-        </a>
-        <a class="vapor-post" href="/blog/nexo">
-          <div class="meta"><span>2025 · 12 · 05</span></div>
-          <h3>nexo — 12 questions about LLMs</h3>
-          <p>Brazilian newspaper article I wrote in collaboration with the Brazil LAB at Princeton University.</p>
-        </a>
-        <a class="vapor-post" href="/blog/cemetery">
-          <div class="meta"><span>2025 · 12 · 06</span></div>
-          <h3>mapping an abandoned cemetery</h3>
-          <p>making the most with limited resources from the last century.</p>
-        </a>
-
-        <a class="vapor-post blog-cta-card" href="/blog">
-          <h3>
-            visit the blog
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </h3>
-        </a>
-      </div>
-
-      <div class="vapor-socials">
-        <a href="https://github.com/alan-barzilay" aria-label="github" class="text-white hover:text-copper transition-colors">
-          <GithubLogo />
-        </a>
-        <a href="https://www.linkedin.com/in/alan-barzilay" aria-label="linkedin" class="text-white hover:text-copper transition-colors">
-          <LinkedinLogo />
-        </a>
-        <a href="/rss.xml" aria-label="rss" class="text-white hover:text-copper transition-colors">
-          <RssLogo />
-        </a>
-      </div>
-    </div>
-  </div>
+  <TweaksPanel />
+  <VaporOutro />
 
   <div class="grain"></div>
 

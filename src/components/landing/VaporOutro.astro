@@ -1,0 +1,54 @@
+---
+import GithubLogo from "../../images/SVGs/github-mark-white.svg";
+import LinkedinLogo from "../../images/SVGs/linkedin.svg";
+import RssLogo from "../../images/SVGs/rss.svg";
+---
+<div class="layer" id="vapor">
+  <!-- outro canvas -->
+  <canvas class="bg-canvas" id="showcase-canvas"></canvas>
+  <div id="vaporGlow"></div>
+
+  <div class="vapor-content">
+    <h1>continue <em>reading.</em></h1>
+
+    <div class="vapor-posts">
+      <a class="vapor-post" href="/blog/making_website_in_2025">
+        <div class="meta"><span>2025 · 12 · 04</span></div>
+        <h3>making a website in 2025</h3>
+        <p>obligatory why bother first post.</p>
+      </a>
+      <a class="vapor-post" href="/blog/nexo">
+        <div class="meta"><span>2025 · 12 · 05</span></div>
+        <h3>nexo — 12 questions about LLMs</h3>
+        <p>Brazilian newspaper article I wrote in collaboration with the Brazil LAB at Princeton University.</p>
+      </a>
+      <a class="vapor-post" href="/blog/cemetery">
+        <div class="meta"><span>2025 · 12 · 06</span></div>
+        <h3>mapping an abandoned cemetery</h3>
+        <p>making the most with limited resources from the last century.</p>
+      </a>
+
+      <a class="vapor-post blog-cta-card" href="/blog">
+        <h3>
+          visit the blog
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </h3>
+      </a>
+    </div>
+
+    <div class="vapor-socials">
+      <a href="https://github.com/alan-barzilay" aria-label="github" class="text-white hover:text-copper transition-colors">
+        <GithubLogo />
+      </a>
+      <a href="https://www.linkedin.com/in/alan-barzilay" aria-label="linkedin" class="text-white hover:text-copper transition-colors">
+        <LinkedinLogo />
+      </a>
+      <a href="/rss.xml" aria-label="rss" class="text-white hover:text-copper transition-colors">
+        <RssLogo />
+      </a>
+    </div>
+  </div>
+</div>
