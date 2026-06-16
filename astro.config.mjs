@@ -20,6 +20,9 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 export default defineConfig({
   site: 'https://alan-barzilay.github.io',
   integrations: [sitemap(), mdx()],
+  image: {
+    domains: ['images.unsplash.com'],
+  },
 
   vite: {
     plugins: [tailwindcss(), visualizer()],
