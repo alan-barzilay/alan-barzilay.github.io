@@ -74,6 +74,7 @@ let lastOpening = null;
 
 let renderTunnel = false;
 let introPlaying = true;
+let scrollP = 0;
 
 const CHAPTERS = [
   { id: "intro",    label: "intro",       at: 0.05 },
@@ -590,7 +591,7 @@ self.onmessage = function (e) {
       
       renderer = new THREE.WebGLRenderer({ canvas: tunnelCanvas, antialias: true, alpha: true });
       renderer.setPixelRatio(viewDPR);
-      renderer.setSize(viewW, viewH);
+      renderer.setSize(viewW, viewH, false);
       renderer.setClearColor(0x000000, 0);
 
       scene = new THREE.Scene();
@@ -670,7 +671,7 @@ self.onmessage = function (e) {
       viewDPR = data.dpr;
       if (renderer) {
         renderer.setPixelRatio(viewDPR);
-        renderer.setSize(viewW, viewH);
+        renderer.setSize(viewW, viewH, false);
       }
       if (camera) {
         camera.aspect = viewW / viewH;

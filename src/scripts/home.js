@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { runAutoplay } from './landing/boot.js';
 import { currentCenterline } from './landing/centerline.js';
+import TunnelWorker from './landing/tunnelWorker.js?worker';
 
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
@@ -142,8 +143,7 @@ if (!supportsOffscreen) {
 }
 
 if (supportsOffscreen) {
-  const workerURL = new URL('./landing/tunnelWorker.js', import.meta.url);
-  worker = new Worker(workerURL, { type: 'module' });
+  worker = new TunnelWorker();
 
   const offscreenTunnel = tunnelCanvas.transferControlToOffscreen();
   const offscreenStar = starCanvas.transferControlToOffscreen();
