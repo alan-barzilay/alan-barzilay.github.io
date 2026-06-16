@@ -13,5 +13,7 @@ const { title, description, bodyClass } = Astro.props;
 
 <BaseLayout title={title} description={description} bodyClass={bodyClass} activeFonts={["montserrat", "jetbrains-mono"]} loadKatex={true}>
   <Navbar />
-  <slot />
+  <main>
+    <slot />
+  </main>
 </BaseLayout>
