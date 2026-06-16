@@ -396,11 +396,14 @@ function layoutRings() {
 buildTube(); // builds the tube meshes AND lays out the rings on the curve
 
 // White particles inside the tube
-const ptGeo = new THREE.BufferGeometry();
+let ptGeo = null;
 const ptCount = 700;
-const ptPos = new Float32Array(ptCount * 3);
-const ptSeeds = new Float32Array(ptCount * 3);
+let ptPos = null;
+let ptSeeds = null;
 if (!supportsOffscreen) {
+  ptGeo = new THREE.BufferGeometry();
+  ptPos = new Float32Array(ptCount * 3);
+  ptSeeds = new Float32Array(ptCount * 3);
   for (let i = 0; i < ptCount; i++) {
     ptSeeds[i*3] = Math.random();
     ptSeeds[i*3+1] = Math.random() * Math.PI * 2;
