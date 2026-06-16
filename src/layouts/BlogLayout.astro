@@ -6,12 +6,13 @@ interface Props {
   title: string;
   description?: string;
   bodyClass?: string;
+  loadKatex?: boolean;
 }
 
-const { title, description, bodyClass } = Astro.props;
+const { title, description, bodyClass, loadKatex = false } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description} bodyClass={bodyClass} activeFonts={["montserrat", "jetbrains-mono"]} loadKatex={true}>
+<BaseLayout title={title} description={description} bodyClass={bodyClass} activeFonts={["montserrat", "jetbrains-mono"]} loadKatex={loadKatex}>
   <Navbar />
   <main>
     <slot />
