@@ -209,10 +209,6 @@ export async function runAutoplay(dom, state, callbacks) {
   if (dom.pbar) dom.pbar.classList.add('on');
   if (dom.hint) dom.hint.classList.add('on');
 
-  // fade in tweaks panel
-  dom.tweaksPanel.style.display = '';
-  setTimeout(() => dom.tweaksPanel.classList.add('in'), 50);
-
   if (callbacks.onComplete) callbacks.onComplete();
 }
 
