@@ -1,5 +1,5 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import BlogLayout from "../layouts/BlogLayout.astro";
 import { getCollection } from "astro:content";
 import ChevronDown from "../images/SVGs/chevron-down.svg";
 
@@ -33,7 +33,7 @@ const postsByTag = tags.reduce(
 );
 ---
 
-<Layout title="Tags">
+<BlogLayout title="Tags">
     <div
         class="max-w-4xl mx-auto md:px-8 md:pb-8 px-4 pt-0 pb-4 text-white min-h-screen"
     >
@@ -88,7 +88,7 @@ const postsByTag = tags.reduce(
             }
         </div>
     </div>
-</Layout>
+</BlogLayout>
 
 <script>
     // No idea why there is no native html solution for this,

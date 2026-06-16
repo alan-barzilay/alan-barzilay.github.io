@@ -1,22 +1,27 @@
 ---
 import "../global.css";
-import Navbar from "../layouts/Navbar.astro";
 import { Font } from "astro:assets";
+
+interface Props {
+  title: string;
+  description?: string;
+  bodyClass?: string;
+  activeFonts?: ("montserrat" | "jetbrains-mono" | "outfit")[];
+}
 
 const {
   title,
+  description,
   bodyClass = "bg-[#1A1A1A] bg-[image:radial-gradient(#333333_2px,transparent_0)] bg-[size:24px_24px]",
+  activeFonts = ["montserrat", "jetbrains-mono"],
 } = Astro.props;
-// <!-- #FFFFFF1A  ou #333333 pros pontos. Resultado indistinguivel pra mim,
-//  mas n eh identico tecnicamente.
-// Transparencia seria ligeriamente mais ineficiente tb mas desprezivel
-// -->
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    {description && <meta name="description" content={description} />}
 
     <link
       rel="icon"
@@ -38,12 +43,12 @@ const {
     />
     <title>{title}</title>
 
-    <Font cssVariable="--font-montserrat" preload />
-    <Font cssVariable="--font-jetbrains-mono" preload />
+    {activeFonts.includes("montserrat") && <Font cssVariable="--font-montserrat" preload />}
+    {activeFonts.includes("jetbrains-mono") && <Font cssVariable="--font-jetbrains-mono" preload />}
+    {activeFonts.includes("outfit") && <Font cssVariable="--font-outfit" preload />}
   </head>
 
   <body class:list={[bodyClass]}>
-    <Navbar />
     <slot />
   </body>
 </html>
