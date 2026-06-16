@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { currentCenterline } from './centerline.js';
+import { PHASES, TEST, CHAPTERS, QUALITY_DEFAULTS } from './config.js';
 
 let renderer, scene, camera, fogDefault;
 let curve;
@@ -22,40 +23,7 @@ let tubeMesh1 = null, tubeMesh2 = null;
 
 let ptGeo, ptCount = 700, ptPos, ptSeeds, ptMat, points;
 
-let QUALITY = { dprCap: 1.5, starScale: 1.0 };
-let PHASES = {
-  tunnelIn:    0.00,
-  tunnelOut:   0.85,
-  tunnelEnd:   0.93,
-  tunnelFlash: 0.94,
-  outroIn:     0.94,
-  outroFull:   0.98,
-};
-let TEST = {
-  starVelocity: 5,
-  starDir: 1,
-  starFocalY: 0.5,
-  contentRise: 0.92,
-  particleDir: -1,
-  emerge: true,
-  emergeGlow: false,
-  emergeBehind: false,
-  outroBgMatch: true,
-  revealR0: 40,
-  revealStartP: 0.82,
-  revealFullP: 0.905,
-  revealAlign: 0.30,
-  endBend: 50,
-  endBendStart: 0.92,
-  bendAngle: 90,
-  startBend: 15,
-  startBendLen: 0.10,
-  startBendAngle: 260,
-  rayMode: 'fade',
-  fadeBase: 0.18,
-  fadeGain: 0.05,
-  fadeMax:  0.85,
-};
+let QUALITY = { ...QUALITY_DEFAULTS };
 
 let activeTube = 'v1d';
 let fogEnabled = true;
@@ -75,15 +43,6 @@ let lastOpening = null;
 let renderTunnel = false;
 let introPlaying = true;
 let scrollP = 0;
-
-const CHAPTERS = [
-  { id: "intro",    label: "intro",       at: 0.05 },
-  { id: "work",     label: "work",        at: 0.20 },
-  { id: "research", label: "research",    at: 0.34 },
-  { id: "education", label: "education & volunteering", at: 0.48 },
-  { id: "diy",      label: "built",       at: 0.62 },
-  { id: "oss",      label: "open source", at: 0.76 },
-];
 
 const BLEND_MODES = {
   additive: { builtin: THREE.AdditiveBlending },
