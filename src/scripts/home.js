@@ -116,7 +116,10 @@ let viewW = window.innerWidth, viewH = window.innerHeight;
 const tunnelCanvas = document.getElementById('tunnel-canvas');
 const starCanvas = document.getElementById('showcase-canvas');
 
-const supportsOffscreen = !!(window.OffscreenCanvas && tunnelCanvas.transferControlToOffscreen && starCanvas.transferControlToOffscreen);
+// ?offscreen=0 forces the main-thread fallback renderer even where OffscreenCanvas
+// is supported — used to exercise/verify the fallback path on modern browsers.
+const offscreenAllowed = new URLSearchParams(location.search).get('offscreen') !== '0';
+const supportsOffscreen = offscreenAllowed && !!(window.OffscreenCanvas && tunnelCanvas.transferControlToOffscreen && starCanvas.transferControlToOffscreen);
 let worker = null;
 
 let renderer, scene, camera, fogDefault;
