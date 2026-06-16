@@ -1,6 +1,6 @@
 ---
 import Card from "../layouts/Card.astro";
-import Layout from "../layouts/Layout.astro";
+import BlogLayout from "../layouts/BlogLayout.astro";
 
 import { getCollection, render } from "astro:content";
 const posts = await getCollection("blog");
@@ -32,7 +32,7 @@ const sortedPosts = postsWithRenderedData.sort((a, b) => {
 });
 ---
 
-<Layout title="Blog">
+<BlogLayout title="Blog">
   <div class="flex flex-col items-center gap-12 md:gap-8 px-4">
     {
       sortedPosts.map((post) => (
@@ -51,4 +51,4 @@ const sortedPosts = postsWithRenderedData.sort((a, b) => {
     }
   </div>
   <footer class="h-8"></footer>
-</Layout>
+</BlogLayout>

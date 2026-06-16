@@ -72,6 +72,14 @@ export default defineConfig({
       subsets: ["latin"],
     },
     {
+      name: "Outfit",
+      cssVariable: "--font-outfit",
+      provider: fontProviders.google(),
+      weights: [300, 500, 700, 900],
+      styles: ["normal"],
+      subsets: ["latin"],
+    },
+    {
       name: "JetBrains Mono",
       cssVariable: "--font-jetbrains-mono",
       provider: fontProviders.google(),

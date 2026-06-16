@@ -1,5 +1,5 @@
 ---
-import Layout from "../../layouts/Layout.astro";
+import BlogLayout from "../../layouts/BlogLayout.astro";
 import CardContent from "../../layouts/CardContent.astro";
 
 import { getCollection, render } from "astro:content";
@@ -23,7 +23,7 @@ const components = {
 };
 ---
 
-<Layout title={post.data.title} bodyClass={body_class}>
+<BlogLayout title={post.data.title} bodyClass={body_class}>
   <div class="relative min-h-64 w-full max-w-4xl mx-auto">
     <CardContent
       title={post.data.title}
@@ -52,4 +52,4 @@ const components = {
   </div>
 
   <ScrollToTop />
-</Layout>
+</BlogLayout>

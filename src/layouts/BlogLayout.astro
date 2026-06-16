@@ -1,0 +1,17 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import Navbar from "./Navbar.astro";
+
+interface Props {
+  title: string;
+  description?: string;
+  bodyClass?: string;
+}
+
+const { title, description, bodyClass } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} bodyClass={bodyClass} activeFonts={["montserrat", "jetbrains-mono"]}>
+  <Navbar />
+  <slot />
+</BaseLayout>
