@@ -834,8 +834,13 @@ body.v-green-theme .vapor-content h1 em { color: var(--tube-accent); font-weight
   }
   details.more dl {
     grid-template-columns: 1fr;
-    text-align: center;
+    text-align: left;
     gap: 4px;
+  }
+}
+@media (max-height: 680px) {
+  details.more {
+    display: none !important;
   }
 }
 @media (max-width: 480px) {
@@ -1862,32 +1867,56 @@ toggleBtn.addEventListener('click', () => {
 const CHAPTERS = [
   { id: "intro",    label: "intro",       at: 0.05, pos: "pos-left",
     head: 'I&rsquo;m <em>Alan</em>. <span class="a">Welcome.</span>',
-    lede: 'Developer &amp; researcher. ML / NLP by trade — <span class="mute">tinkerer, sysadmin, occasional educator. São Paulo, Brazil.</span>' },
-  { id: "oss",      label: "open source", at: 0.20, pos: "pos-right",
-    head: '<span class="a">Open source.</span><br/>For a decade.',
-    lede: 'Sole maintainer of <strong>pipreqs</strong>. Two-time GSoC. <span class="mute">A long tail of patches across the python &amp; linux ecosystem.</span>',
-    more: [["pipreqs","sole maintainer · 2019 → now"],["gsoc","2017, 2018"],["misc","ongoing patches &amp; reviews"]] },
-  { id: "systems",  label: "systems",     at: 0.34, pos: "pos-bot-l",
-    head: 'Running <span class="a">my own metal.</span>',
-    lede: 'Linux sysadmin for as long as I&rsquo;ve been a developer. <span class="mute">Self-host most of what I rely on day-to-day.</span>',
-    more: [["os","arch · debian · nixos"],["infra","nginx · postgres · wireguard · zfs · borg"]] },
-  { id: "teaching", label: "teaching",    at: 0.48, pos: "pos-top-r",
-    head: 'The <span class="a">teaching half</span><br/>of the job.',
-    lede: 'Coursera course on NLP. Years volunteering in a Brazilian youth movement. <span class="mute">Science-fair judging. Graduate guest lectures.</span>',
-    more: [["coursera","authored an NLP course (2021)"],["volunteer","youth movement educator · years"],["judge","STEM fair · regional &amp; national"]] },
+    lede: 'Developer &amp; researcher. ML / NLP by trade — <span class="mute">DIY enthusiast, open source contributor, occasional educator. São Paulo, Brazil.</span>' },
+  { id: "work",     label: "work",        at: 0.20, pos: "pos-right",
+    head: 'Putting it<br/><span class="a">into production</span>',
+    lede: 'Ongoing industry career building data and ML systems. <span class="mute">Experience working at banks, startups, consulting and free-lancing.</span>' },
+  { id: "research", label: "research",    at: 0.34, pos: "pos-bot-l",
+    head: 'Chasing <span class="a">the frontier</span>',
+    lede: 'Master&rsquo;s in CS focusing on NLP, internship at Oxford, exchange in TUDelft. <span class="mute">Multiple graduate and undergraduate research projects.</span>' },
+  { id: "education", label: "education &amp; volunteering", at: 0.48, pos: "pos-top-r",
+    head: 'Growing people,<br/><span class="a">not just systems.</span>',
+    lede: 'Years of volunteering and leadership. <span class="mute">Formal and non-formal education.</span>',
+    more: [
+      ["coursera", "authored a graduate level NLP course"],
+      ["avanhandava", "youth educational movement · 5 years educator · 1 year president"],
+      ["judge", "STEM fair judge · regional &amp; national"],
+      ["student assoc.", "founding member and president"],
+      ["linux network", "volunteer sys admin at my alma mater · 10 years"]
+    ] },
   { id: "diy",      label: "built",       at: 0.62, pos: "pos-bot-r",
-    head: 'Built <span class="a">things that aren&rsquo;t code.</span>',
-    lede: 'Bike mechanic. Backyard aquaponics. Charcoal kiln. A toy OS. <span class="mute">One physical project on the bench at all times.</span>',
-    more: [["2018","community workshop bike mechanic"],["2019","aquaponics loop · 3 summers"],["2021","steel-drum charcoal kiln"],["2023","hand-rolled x86 toy OS"]] },
-  { id: "work",     label: "work",        at: 0.76, pos: "pos-left",
-    head: 'Research &amp; industry,<br/><span class="a">in roughly equal measure.</span>',
-    lede: 'Master&rsquo;s in CS. Years of applied research in NLP. Ongoing industry career building data and ML systems.' },
+    head: '<span class="a">Built things</span> that aren&rsquo;t (always) code.',
+    lede: 'Bike mechanic. Backyard aquaponics. Charcoal kiln. Self-hosting most of my things. <span class="mute">Multiple projects on the bench at all times.</span>',
+    more: [
+      "community workshop bike mechanic",
+      "steel-drum charcoal kiln",
+      "aquaponics loop",
+      "network attached storage",
+      "several websites",
+      "game mods &amp; ROM hacks",
+      "OSkate - my own OS"
+    ] },
+  { id: "oss",      label: "open source", at: 0.76, pos: "pos-left",
+    head: '<span class="a">Open source.</span><br/>Since the beginning.',
+    lede: 'Contributing back since I started coding. Years as sole maintainer of pipreqs. GSoC mentee. <span class="mute">A long tail of patches across the python &amp; linux ecosystem.</span>',
+    more: [
+      ["pipreqs", "sole maintainer · 2021 - 2024"],
+      ["gsoc", "Linux Foundation · 2021"],
+      ["misc", "ongoing PRs &amp; comments in many random repos"],
+      ["failed", "I tried, can't win them all but I can share them"]
+    ] },
 ];
 
 const stageEl = document.getElementById('cardStage');
 CHAPTERS.forEach((ch, i) => {
   const moreHtml = ch.more ? `<details class="more"><summary>read more</summary>
-    <dl>${ch.more.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>
+    <dl>${ch.more.map(item => {
+      if (Array.isArray(item)) {
+        return `<dt>${item[0]}</dt><dd>${item[1]}</dd>`;
+      } else {
+        return `<dd style="grid-column: 1 / -1;">· ${item}</dd>`;
+      }
+    }).join("")}</dl>
   </details>` : '';
   const html = `<div class="chapter ${ch.pos}" data-i="${i}">
     <div class="idx">${String(i+1).padStart(2,"0")} · ${ch.label}</div>
