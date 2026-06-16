@@ -112,20 +112,99 @@ window.QUALITY = QUALITY;
 let viewW = window.innerWidth, viewH = window.innerHeight;
 
 const tunnelCanvas = document.getElementById('tunnel-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas: tunnelCanvas, antialias: true, alpha: true });
-renderer.setPixelRatio(effDPR());
-renderer.setSize(viewW, viewH);
-renderer.setClearColor(0x000000, 0); // transparent background so starfield shows through
+const starCanvas = document.getElementById('showcase-canvas');
 
-const scene = new THREE.Scene();
-const fogDefault = new THREE.FogExp2(0x070c0a, 0.038);
-scene.fog = fogDefault;
-const camera = new THREE.PerspectiveCamera(60, viewW / viewH, 0.1, 1000);
+const supportsOffscreen = !!(window.OffscreenCanvas && tunnelCanvas.transferControlToOffscreen && starCanvas.transferControlToOffscreen);
+let worker = null;
 
-// Track whether fog is enabled (for toggle)
+let renderer, scene, camera, fogDefault;
 let fogEnabled = true;
-
 let activeTube = 'v1d';
+
+// Define DOM references early for worker messages
+const vaporEl = document.getElementById('vapor');
+const vaporContentEl = document.querySelector('.vapor-content');
+const vaporGlowEl = document.getElementById('vaporGlow');
+const topEl   = document.getElementById('top');
+const pbarEl  = document.getElementById('pbar');
+const tunnelUIEl = document.getElementById('tunnel-ui');
+
+if (!supportsOffscreen) {
+  renderer = new THREE.WebGLRenderer({ canvas: tunnelCanvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(effDPR());
+  renderer.setSize(viewW, viewH);
+  renderer.setClearColor(0x000000, 0); // transparent background so starfield shows through
+
+  scene = new THREE.Scene();
+  fogDefault = new THREE.FogExp2(0x070c0a, 0.038);
+  scene.fog = fogDefault;
+  camera = new THREE.PerspectiveCamera(60, viewW / viewH, 0.1, 1000);
+}
+
+if (supportsOffscreen) {
+  const workerURL = new URL('./landing/tunnelWorker.js', import.meta.url);
+  worker = new Worker(workerURL, { type: 'module' });
+
+  const offscreenTunnel = tunnelCanvas.transferControlToOffscreen();
+  const offscreenStar = starCanvas.transferControlToOffscreen();
+
+  worker.postMessage({
+    type: 'init',
+    canvas: offscreenTunnel,
+    starCanvas: offscreenStar,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    dpr: effDPR()
+  }, [offscreenTunnel, offscreenStar]);
+
+  worker.onmessage = (e) => {
+    const data = e.data;
+    if (data.type === 'domUpdate') {
+      if (topEl) topEl.classList.toggle('hide-nav', data.hideNav);
+      
+      tunnelCanvas.style.opacity = data.tunnelOpacity;
+      tunnelUIEl.style.opacity = data.tunnelOpacity;
+      
+      vaporEl.style.opacity = data.vaporOpacity;
+      vaporEl.style.visibility = data.vaporVisibility;
+      
+      if (data.mask !== lastMask) {
+        lastMask = data.mask;
+        vaporEl.style.webkitMaskImage = data.mask;
+        vaporEl.style.maskImage = data.mask;
+      }
+      
+      vaporContentEl.style.transform = `translateY(${(1 - data.contentRise) * 110}px)`;
+      vaporContentEl.style.opacity = data.contentRise;
+      
+      vaporGlowEl.style.opacity = data.glow;
+      
+      if (data.resetSmooth) {
+        window._openSmoothX = null;
+        window._openSmoothY = null;
+      }
+    } else if (data.type === 'shift') {
+      if (data.clear) {
+        starCanvas.style.transform = '';
+      } else {
+        starCanvas.style.transform = `translate(${data.x}px, ${data.y}px)`;
+      }
+    } else if (data.type === 'shadersReady') {
+      shadersReady = true;
+    } else if (data.type === 'stats') {
+      if (statsEl) {
+        const sScale = (effDPR() * QUALITY.starScale).toFixed(2);
+        statsEl.textContent =
+          `fps    ${data.fps}\n` +
+          `dprCap ${QUALITY.dprCap}  → eff ${effDPR().toFixed(2)}\n` +
+          `device ${(window.devicePixelRatio || 1).toFixed(2)}\n` +
+          `star   ${sScale}×  (offscreen)\n` +
+          `scroll ${data.scroll}%\n` +
+          `layers ${data.layers}`;
+      }
+    }
+  };
+}
 
 // ---- per-curve caches + scratch vectors (perf) ----
 // Everything derivable from the curve alone is computed ONCE per tube build:
@@ -235,6 +314,7 @@ function setLumGain(g) {
 }
 let tubeMesh1 = null, tubeMesh2 = null;
 function buildTube() {
+  if (supportsOffscreen) return;
   curve = new THREE.CatmullRomCurve3(currentCenterline(activeTube, TEST), false, 'catmullrom', 0.5);
   refreshCurveCache();
   if (tubeMesh1) { scene.remove(tubeMesh1); tubeMesh1.geometry.dispose(); }
@@ -338,27 +418,30 @@ CHAPTERS.forEach((ch) => {
 const rings = [];
 const ringHalos = [];
 const ringLocalT = [];
-CHAPTERS.forEach((ch) => {
-  const local = (ch.at - PHASES.tunnelIn) / (PHASES.tunnelEnd - PHASES.tunnelIn);
-  if (local < 0 || local > 1) return;
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(5.2, 0.10, 6, 96),
-    new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })
-  );
-  ring.frustumCulled = false;
-  scene.add(ring);
-  const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(5.5, 0.04, 4, 64),
-    new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })
-  );
-  halo.frustumCulled = false;
-  scene.add(halo);
-  rings.push(ring);
-  ringHalos.push(halo);
-  ringLocalT.push(Math.min(local, 0.999));
-});
+if (!supportsOffscreen) {
+  CHAPTERS.forEach((ch) => {
+    const local = (ch.at - PHASES.tunnelIn) / (PHASES.tunnelEnd - PHASES.tunnelIn);
+    if (local < 0 || local > 1) return;
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(5.2, 0.10, 6, 96),
+      new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    ring.frustumCulled = false;
+    scene.add(ring);
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(5.5, 0.04, 4, 64),
+      new THREE.MeshBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    halo.frustumCulled = false;
+    scene.add(halo);
+    rings.push(ring);
+    ringHalos.push(halo);
+    ringLocalT.push(Math.min(local, 0.999));
+  });
+}
 // (re)place rings/halos along the current curve — called after any bend rebuild
 function layoutRings() {
+  if (supportsOffscreen) return;
   rings.forEach((ring, i) => {
     const tt = ringLocalT[i];
     const p = curve.getPointAt(tt);
@@ -377,19 +460,21 @@ const ptGeo = new THREE.BufferGeometry();
 const ptCount = 700;
 const ptPos = new Float32Array(ptCount * 3);
 const ptSeeds = new Float32Array(ptCount * 3);
-for (let i = 0; i < ptCount; i++) {
-  ptSeeds[i*3] = Math.random();
-  ptSeeds[i*3+1] = Math.random() * Math.PI * 2;
-  ptSeeds[i*3+2] = 1.8 + Math.random() * 3.4;
+if (!supportsOffscreen) {
+  for (let i = 0; i < ptCount; i++) {
+    ptSeeds[i*3] = Math.random();
+    ptSeeds[i*3+1] = Math.random() * Math.PI * 2;
+    ptSeeds[i*3+2] = 1.8 + Math.random() * 3.4;
+  }
+  ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPos, 3));
+  const ptMat = new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.06, transparent: true, opacity: 0.6,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const points = new THREE.Points(ptGeo, ptMat);
+  points.frustumCulled = false;
+  scene.add(points);
 }
-ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPos, 3));
-const ptMat = new THREE.PointsMaterial({
-  color: 0xffffff, size: 0.06, transparent: true, opacity: 0.6,
-  blending: THREE.AdditiveBlending, depthWrite: false
-});
-const points = new THREE.Points(ptGeo, ptMat);
-points.frustumCulled = false;
-scene.add(points);
 
 // ============================================================
 // SHADER COMPILE — async (KHR_parallel_shader_compile)
@@ -409,19 +494,21 @@ scene.add(points);
 // would buy little while risking drift in additive blending / fog / tone-map.
 // Moving the compile off-thread captures the win with zero visual risk.
 let shadersReady = false;
-if (typeof renderer.compileAsync === 'function') {
-  renderer.compileAsync(scene, camera)
-    .then(() => {
-      // Warm up compile & link caches by forcing a single synchronous dummy render 
-      // while the user is viewing the typing boot logs.
-      renderer.render(scene, camera);
-      shadersReady = true;
-    })
-    .catch(() => {
-      shadersReady = true; // never leave the tunnel un-rendered
-    });
-} else {
-  shadersReady = true; // older three.js: fall back to a synchronous first-render compile
+if (!supportsOffscreen) {
+  if (typeof renderer.compileAsync === 'function') {
+    renderer.compileAsync(scene, camera)
+      .then(() => {
+        // Warm up compile & link caches by forcing a single synchronous dummy render 
+        // while the user is viewing the typing boot logs.
+        renderer.render(scene, camera);
+        shadersReady = true;
+      })
+      .catch(() => {
+        shadersReady = true; // never leave the tunnel un-rendered
+      });
+  } else {
+    shadersReady = true; // older three.js: fall back to a synchronous first-render compile
+  }
 }
 
 // ============================================================
@@ -430,8 +517,10 @@ if (typeof renderer.compileAsync === 'function') {
 let outroActive = false;
 
 // canvas + 2D context resolved ONCE (the old draw() did two DOM lookups per frame)
-const starCanvas = document.getElementById('showcase-canvas');
-const starCtx = starCanvas.getContext('2d');
+let starCtx;
+if (!supportsOffscreen) {
+  starCtx = starCanvas.getContext('2d');
+}
 // quantised stroke-style cache — avoids building a fresh rgba() string per star per frame
 const STAR_STROKES = [];
 for (let i = 0; i < 256; i++) STAR_STROKES.push(`rgba(184, 240, 208, ${(i / 255).toFixed(3)})`);
@@ -465,6 +554,7 @@ const StarfieldEffect = {
     s.y = Math.sin(ang) * r;
   },
   setup() {
+    if (supportsOffscreen) return;
     const cv = starCanvas;
     const scale = cv._renderScale || 1;
     const W = cv.width / scale, H = cv.height / scale; // logical (CSS px) size
@@ -480,6 +570,7 @@ const StarfieldEffect = {
     }
   },
   draw(dt) {
+    if (supportsOffscreen) return;
     dt = dt || 1; // #3 delta-time: 1.0 == one 60fps tick; >1 when frames are slow
     const cv = starCanvas;
     const ctx = starCtx;
@@ -580,6 +671,7 @@ const StarfieldEffect = {
 };
 
 function resizeOutroCanvas() {
+  if (supportsOffscreen) return;
   const cv = starCanvas;
   // #1 render the starfield at (clamped DPR × starScale); keep the CSS box at
   // viewport size so it still fills the screen, just at a capped resolution.
@@ -598,18 +690,10 @@ function resizeOutroCanvas() {
 // ============================================================
 // PHASE OPACITY (driven by scroll for tunnel + vapor)
 // ============================================================
-const vaporEl = document.getElementById('vapor');
-const vaporContentEl = document.querySelector('.vapor-content');
-const vaporGlowEl = document.getElementById('vaporGlow');
-const topEl   = document.getElementById('top');
-const pbarEl  = document.getElementById('pbar');
-
 function clamp01(x) { return Math.max(0, Math.min(1, x)); }
 function smoothstep(x) { return x*x*(3 - 2*x); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-
-const tunnelUIEl = document.getElementById('tunnel-ui');
 let lastTunnelOpacity = -1;
 let vaporHidden = true;      // mirrors the CSS initial state of #vapor (hidden)
 let lastVaporOpacity = '', lastMask = '', lastCe = -1, lastGlow = -1;
@@ -617,6 +701,7 @@ let maskDropped = false; // B4: true once the reveal is fully open and the mask 
 let lastHideNav = null;
 
 function updateLayers(p) {
+  if (supportsOffscreen) return;
   const shouldHideNav = p >= 0.91;
   if (shouldHideNav !== lastHideNav) {
     lastHideNav = shouldHideNav;
@@ -887,17 +972,24 @@ function updateScroll() {
     const hint = document.getElementById('hint');
     if (hint) hint.classList.remove('on');
   }
+  if (supportsOffscreen && worker) {
+    worker.postMessage({ type: 'scroll', p: scrollP });
+  }
 }
 window.addEventListener('scroll', updateScroll, { passive: true });
 window.addEventListener('resize', () => {
   viewW = window.innerWidth; viewH = window.innerHeight;
-  renderer.setPixelRatio(effDPR());
-  renderer.setSize(viewW, viewH);
-  camera.aspect = viewW / viewH;
-  camera.updateProjectionMatrix();
   updateScrollMax();
   updateScroll();
-  resizeOutroCanvas();
+  if (supportsOffscreen && worker) {
+    worker.postMessage({ type: 'resize', width: viewW, height: viewH, dpr: effDPR() });
+  } else {
+    renderer.setPixelRatio(effDPR());
+    renderer.setSize(viewW, viewH);
+    camera.aspect = viewW / viewH;
+    camera.updateProjectionMatrix();
+    resizeOutroCanvas();
+  }
 });
 updateScrollMax();
 updateScroll();
@@ -977,7 +1069,7 @@ function frame(ts) {
   // tunnel camera: ease into the deep end so by tunnelEnd the camera is at
   // curve t ≈ 0.998 — we've travelled the full tube. Fog density takes over
   // ahead, leaving only the immediate tube walls visible at the screen borders.
-  if (tunnelVisible && !introPlaying && renderTunnel) {
+  if (!supportsOffscreen && tunnelVisible && !introPlaying && renderTunnel) {
   let tCurve;
   if (p < PHASES.tunnelOut) {
     tCurve = lerp(0.001, 0.92, p / PHASES.tunnelOut);
@@ -1050,13 +1142,15 @@ function frame(ts) {
 
   // gate the first GL render on async shader compile (see compileAsync above);
   // once shadersReady flips true it stays true, so this is a no-op thereafter.
-  if (tunnelVisible && shadersReady && !introPlaying && renderTunnel) renderer.render(scene, camera);
+  if (!supportsOffscreen) {
+    if (tunnelVisible && shadersReady && !introPlaying && renderTunnel) renderer.render(scene, camera);
 
-  if (outroActive) {
-    StarfieldEffect.draw(dt);
+    if (outroActive) {
+      StarfieldEffect.draw(dt);
+    }
   }
 
-  if (statsEl) {
+  if (!supportsOffscreen && statsEl) {
     statsFrames++;
     if (nowMs - statsLast >= 500) {
       const fps = statsFrames * 1000 / (nowMs - statsLast);
@@ -1105,11 +1199,22 @@ function initAutoplay() {
     get introCancelled() { return introCancelled; },
     set introCancelled(val) { introCancelled = val; },
     get introPlaying() { return introPlaying; },
-    set introPlaying(val) { introPlaying = val; },
+    set introPlaying(val) {
+      introPlaying = val;
+      if (supportsOffscreen && worker) {
+        worker.postMessage({ type: 'setIntroPlaying', val });
+      }
+    },
   };
 
   const callbacks = {
-    setRenderTunnel: (val) => { renderTunnel = val; },
+    setRenderTunnel: (val) => {
+      if (supportsOffscreen && worker) {
+        worker.postMessage({ type: 'setRenderTunnel', val });
+      } else {
+        renderTunnel = val;
+      }
+    },
     onComplete: () => {}
   };
 
