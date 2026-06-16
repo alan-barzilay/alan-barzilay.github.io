@@ -1,0 +1,56 @@
+---
+---
+<div id="tweaks-panel" style="display: none;">
+  <h4>Circle Color</h4>
+  <div class="color-options">
+    <div class="color-option active" data-color="#6fc89a" title="Green (default)"></div>
+    <div class="color-option" data-color="#F4B182" title="Orange (tube accent)"></div>
+    <div class="color-option" data-color="#b8f0d0" title="Bright Green"></div>
+  </div>
+  <h4 style="margin-top:14px;">Tube Shape</h4>
+  <div class="tube-options" id="tubeOptions">
+    <button data-tube="v1c">1c · calm from ch4</button>
+    <button data-tube="v1a">1a · planar (no roll)</button>
+    <button data-tube="v1b">1b · low-pitch snake</button>
+    <button data-tube="v1d" class="active">1d · slow beat (+front bend)</button>
+    <button data-tube="v1dplain">1d · slow beat (plain)</button>
+    <button data-tube="v1e">1e · staircase (L-down-R-down)</button>
+    <button data-tube="v1orig">1 · original snake (ref)</button>
+    <button data-tube="v4">4 · sharp toward exit</button>
+    <button data-tube="v5">5 · dense snake</button>
+    <button data-tube="current">0 · current (live)</button>
+  </div>
+  <h4 style="margin-top:14px;">Start Bend <span style="float:right; color:rgba(255,255,255,0.4); font-size:9px; letter-spacing:0; text-transform:none;">1d</span></h4>
+  <p style="font-family:var(--mono); font-size:9px; line-height:1.5; color:rgba(255,255,255,0.4); margin:0;">mirror of the end-bend, on the tube entrance. hides the distance at 0%, reveals as you round it.</p>
+  <label class="sb-label">amount<span id="sbAmtVal">15</span></label>
+  <input type="range" id="sbAmt" min="0" max="180" step="5" value="15" />
+  <label class="sb-label">length<span id="sbLenVal">0.10</span></label>
+  <input type="range" id="sbLen" min="0.02" max="0.40" step="0.01" value="0.10" />
+  <label class="sb-label">angle<span id="sbAngVal">260°</span></label>
+  <input type="range" id="sbAng" min="0" max="360" step="5" value="260" />
+  <h4 style="margin-top:14px;">Blend Mode</h4>
+  <div class="tube-options" id="blendModeOptions">
+    <button data-blend="additive" class="active">additive → white</button>
+    <button data-blend="screen">screen (soft cap)</button>
+    <button data-blend="softadd">soft-add (gain)</button>
+    <button data-blend="average">average (hard cap)</button>
+    <button data-blend="tubecolor">tube color (flat)</button>
+    <button data-blend="lighten">lighten → white</button>
+    <button data-blend="normal">normal → bg</button>
+    <button data-blend="multiply">multiply → black</button>
+    <button data-blend="darken">darken → black</button>
+    <button data-blend="subtract">subtract</button>
+    <button data-blend="difference">difference</button>
+  </div>
+  <h4 style="margin-top:14px;">Luminosity Gain<span id="lumGainVal" style="float:right; color:rgba(255,255,255,0.55);">0.50</span></h4>
+  <input type="range" id="lumGainSlider" min="0.05" max="1" step="0.05" value="0.5" style="width:100%; accent-color: var(--phos-bright); cursor:pointer;" />
+  <p style="font-family:var(--mono); font-size:9px; line-height:1.5; color:rgba(255,255,255,0.4); margin:2px 0 0;">affects soft-add: how much each overlapping ray adds</p>
+  <h4 style="margin-top:14px;">Background</h4>
+  <div class="tube-options">
+    <button id="togglePureBlack" style="width: 100%;">bg: dark theme</button>
+  </div>
+  <h4 style="margin-top:14px;">Visibility</h4>
+  <div class="tube-options">
+    <button id="toggleDarkerRays" class="active" style="width: 100%;">darker rays: ON</button>
+  </div>
+</div>
