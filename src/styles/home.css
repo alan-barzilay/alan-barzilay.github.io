@@ -11,14 +11,6 @@
   --tube-accent: #F4B182;
   --tube-accent-glow: rgba(244, 177, 130, 0.7);
   --circle-color: #6fc89a;
-
-  /* synthwave / vapor — shared neon palette for Starfox Neon outro */
-  --neon-pink:  #ff2bd6;
-  --neon-cyan:  #00d4ff;
-  --neon-magenta: #c93dff;
-  --deep:      #0a0420;
-  --deep2:     #06031a;
-  --vw-ink:    #f5d8ff;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
