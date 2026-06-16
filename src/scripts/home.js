@@ -1227,42 +1227,5 @@ if (document.readyState !== 'loading') {
   window.addEventListener('load', initAutoplay);
 }
 
-// ============================================================
-// COLOR SELECTOR — circle color tweaks
-// ============================================================
-const colorOptions = document.querySelectorAll('.color-option');
-const defaultColor = '#6fc89a';
 
-// Load saved color from localStorage
-function loadCircleColor() {
-  const saved = localStorage.getItem('circle-color');
-  const color = saved || defaultColor;
-  setCircleColor(color);
-}
-
-function setCircleColor(color) {
-  document.documentElement.style.setProperty('--circle-color', color);
-  localStorage.setItem('circle-color', color);
-  
-  // Update active state
-  colorOptions.forEach(opt => {
-    if (opt.getAttribute('data-color') === color) {
-      opt.classList.add('active');
-    } else {
-      opt.classList.remove('active');
-    }
-  });
-}
-
-colorOptions.forEach(option => {
-  option.addEventListener('click', () => {
-    const color = option.getAttribute('data-color');
-    setCircleColor(color);
-  });
-});
-
-// Initialize on page load
-loadCircleColor();
-
-// Tweaks panel sliders & selectors modularized to tweaks.js
 
