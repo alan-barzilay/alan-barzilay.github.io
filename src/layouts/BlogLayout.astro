@@ -11,7 +11,7 @@ interface Props {
 const { title, description, bodyClass } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description} bodyClass={bodyClass} activeFonts={["montserrat", "jetbrains-mono"]}>
+<BaseLayout title={title} description={description} bodyClass={bodyClass} activeFonts={["montserrat", "jetbrains-mono"]} loadKatex={true}>
   <Navbar />
   <slot />
 </BaseLayout>
