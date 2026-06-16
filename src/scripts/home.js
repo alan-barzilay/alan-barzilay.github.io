@@ -1,7 +1,8 @@
-import * as THREE from 'three';
 import { runAutoplay } from './landing/boot.js';
-import { currentCenterline } from './landing/centerline.js';
 import TunnelWorker from './landing/tunnelWorker.js?worker';
+
+let THREE = null;
+let currentCenterline = null;
 
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
@@ -131,6 +132,20 @@ const pbarEl  = document.getElementById('pbar');
 const tunnelUIEl = document.getElementById('tunnel-ui');
 
 if (!supportsOffscreen) {
+  THREE = await import('three');
+  const centerlineModule = await import('./landing/centerline.js');
+  currentCenterline = centerlineModule.currentCenterline;
+
+  _tmpV1 = new THREE.Vector3();
+  _tmpV2 = new THREE.Vector3();
+  _camLook = new THREE.Vector3();
+  curveEnd = new THREE.Vector3();
+  curveEndTangent = new THREE.Vector3();
+  openingEdge = new THREE.Vector3();
+
+  tubeMat1 = new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
+  tubeMat2 = new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false });
+
   renderer = new THREE.WebGLRenderer({ canvas: tunnelCanvas, antialias: true, alpha: true });
   renderer.setPixelRatio(effDPR());
   renderer.setSize(viewW, viewH);
@@ -212,13 +227,13 @@ if (supportsOffscreen) {
 // samples for the particle system. The frame loop reuses these scratch
 // vectors instead of allocating new THREE.Vector3s every frame.
 let curve = null;
-const _tmpV1 = new THREE.Vector3(), _tmpV2 = new THREE.Vector3();
-const _camLook = new THREE.Vector3();
+let _tmpV1 = null, _tmpV2 = null;
+let _camLook = null;
 const CURVE_LUT_N = 1024;
 const curveLUT = new Float32Array(CURVE_LUT_N * 3);
-const curveEnd = new THREE.Vector3();        // curve.getPointAt(0.999)
-const curveEndTangent = new THREE.Vector3(); // exit tangent (normalised)
-const openingEdge = new THREE.Vector3();     // curveEnd + perpendicular · tube radius
+let curveEnd = null;        // curve.getPointAt(0.999)
+let curveEndTangent = null; // exit tangent (normalised)
+let openingEdge = null;     // curveEnd + perpendicular · tube radius
 function refreshCurveCache() {
   for (let i = 0; i < CURVE_LUT_N; i++) {
     curve.getPointAt(i / (CURVE_LUT_N - 1), _tmpV1);
@@ -236,82 +251,7 @@ function refreshCurveCache() {
 // controls can reshape the tube live. Materials are created ONCE and shared
 // across rebuilds (the old code created — and leaked — a fresh pair per rebuild).
 
-// ============================================================
-// BLEND MODE SYSTEM
-// GPU blending computes:  result = src×srcFactor  (EQUATION)  dst×dstFactor,
-// clamped to [0,1]. The EQUATION is one of: Add, Subtract, ReverseSubtract,
-// Min, Max. The FACTORS scale each side (One, Zero, SrcColor, DstColor,
-// OneMinusSrcColor, ConstantColor, …). three.js ships 5 named presets; the
-// rest below are assembled by hand from CustomBlending + equation + factors.
-//
-// Descriptor: { builtin } | { custom:{equation,src,dst}, usesGain?, constant? }
-//  · usesGain  → src factor is ConstantColor, scaled live by the gain slider
-//  · constant  → fixed ConstantColor value baked in (e.g. 0.5 for average)
-// ============================================================
-let lumGain = 0.5; // 0..1 — per-ray contribution for the soft-add mode
-const BLEND_MODES = {
-  // src + dst — light piles up, overlaps race to WHITE (no ceiling)
-  additive: { builtin: THREE.AdditiveBlending },
-  // src + dst − src·dst — SELF-LIMITING additive: each layer adds less as it
-  // brightens, asymptotically approaching (never overshooting) white. Soft cap.
-  screen:   { custom: { equation: THREE.AddEquation, src: THREE.OneFactor, dst: THREE.OneMinusSrcColorFactor } },
-  // src×gain + dst — additive with a dialable per-ray gain (slider). Low gain =
-  // gentle brightening that takes far more overlap to reach white.
-  softadd:  { custom: { equation: THREE.AddEquation, src: THREE.ConstantColorFactor, dst: THREE.OneFactor }, usesGain: true },
-  // src×0.5 + dst×0.5 — weighted average. Overlaps blend toward the mean and can
-  // NEVER exceed a single ray's brightness → a true HARD cap at the ray color.
-  average:  { custom: { equation: THREE.AddEquation, src: THREE.ConstantColorFactor, dst: THREE.OneMinusConstantColorFactor }, constant: 0.5 },
-  // per-RGB-channel max(src,dst) — keeps the brighter; overlaps drift to WHITE
-  lighten:  { custom: { equation: THREE.MaxEquation, src: THREE.OneFactor, dst: THREE.OneFactor } },
-  // standard alpha composite; respects fog → distant overlaps fade to BACKGROUND
-  normal:   { builtin: THREE.NormalBlending },
-  // src×dst — multiplies colors, overlaps darken toward BLACK
-  multiply: { builtin: THREE.MultiplyBlending },
-  // per-RGB-channel min(src,dst) — keeps the darker; overlaps drift to BLACK
-  darken:   { custom: { equation: THREE.MinEquation, src: THREE.OneFactor, dst: THREE.OneFactor } },
-  // dst×(1−src) — rays carve darkness OUT of the background (inverse of screen)
-  subtract: { builtin: THREE.SubtractiveBlending },
-  // dst − src — reverse-subtract; overlaps invert into dark glitch edges
-  difference: { custom: { equation: THREE.ReverseSubtractEquation, src: THREE.OneFactor, dst: THREE.OneFactor } },
-  // src=constant tube color, dst=0 — PINS every drawn pixel to the tube color
-  // regardless of overlap. No brightening, no darkening: overlaps stay green.
-  tubecolor: { custom: { equation: THREE.AddEquation, src: THREE.ConstantColorFactor, dst: THREE.ZeroFactor }, constantColorHex: 0x4f8c6f },
-};
-let currentBlendMode = 'additive';
-let pureBlackBg = false;
-
-let tubeMat1 = new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
-let tubeMat2 = new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false });
-
-function applyBlend(mat, desc) {
-  if (desc.builtin !== undefined) {
-    mat.blending = desc.builtin;
-  } else {
-    mat.blending = THREE.CustomBlending;
-    mat.blendEquation = desc.custom.equation;
-    mat.blendSrc = desc.custom.src;
-    mat.blendDst = desc.custom.dst;
-    if (desc.usesGain) mat.blendColor.setScalar(lumGain);
-    else if (desc.constantColorHex !== undefined) mat.blendColor.setHex(desc.constantColorHex);
-    else if (desc.constant !== undefined) mat.blendColor.setScalar(desc.constant);
-  }
-  mat.needsUpdate = true;
-}
-function setBlendMode(modeName) {
-  const desc = BLEND_MODES[modeName];
-  if (!desc) return;
-  currentBlendMode = modeName;
-  applyBlend(tubeMat1, desc);
-  applyBlend(tubeMat2, desc);
-}
-function setLumGain(g) {
-  lumGain = g;
-  const desc = BLEND_MODES[currentBlendMode];
-  if (desc && desc.usesGain) {
-    tubeMat1.blendColor.setScalar(g); tubeMat1.needsUpdate = true;
-    tubeMat2.blendColor.setScalar(g); tubeMat2.needsUpdate = true;
-  }
-}
+let tubeMat1 = null, tubeMat2 = null;
 let tubeMesh1 = null, tubeMesh2 = null;
 function buildTube() {
   if (supportsOffscreen) return;
@@ -976,14 +916,32 @@ function updateScroll() {
     worker.postMessage({ type: 'scroll', p: scrollP });
   }
 }
-window.addEventListener('scroll', updateScroll, { passive: true });
+
+function setupInteractionListeners() {
+  window.addEventListener('scroll', updateScroll, { passive: true });
+  
+  const trackEl = document.getElementById('track');
+  if (trackEl) {
+    trackEl.addEventListener('click', (e) => {
+      const rect = trackEl.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      updateScrollMax();
+      window.scrollTo({
+        top: pct * scrollMax,
+        behavior: 'smooth'
+      });
+    });
+  }
+}
+
 window.addEventListener('resize', () => {
   viewW = window.innerWidth; viewH = window.innerHeight;
   updateScrollMax();
   updateScroll();
   if (supportsOffscreen && worker) {
     worker.postMessage({ type: 'resize', width: viewW, height: viewH, dpr: effDPR() });
-  } else {
+  } else if (renderer && camera) {
     renderer.setPixelRatio(effDPR());
     renderer.setSize(viewW, viewH);
     camera.aspect = viewW / viewH;
@@ -994,18 +952,6 @@ window.addEventListener('resize', () => {
 updateScrollMax();
 updateScroll();
 resizeOutroCanvas();
-
-const trackEl = document.getElementById('track');
-trackEl.addEventListener('click', (e) => {
-  const rect = trackEl.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const pct = Math.max(0, Math.min(1, clickX / rect.width));
-  updateScrollMax();
-  window.scrollTo({
-    top: pct * scrollMax,
-    behavior: 'smooth'
-  });
-});
 
 const cards = document.querySelectorAll('.chapter');
 const pCurEl = document.getElementById('pCur');
@@ -1031,8 +977,10 @@ let lastFillW = '', lastPct = -1;
 
 // Re-apply quality settings after changing QUALITY.* live from the console.
 QUALITY.apply = function () {
-  renderer.setPixelRatio(effDPR());
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (renderer) {
+    renderer.setPixelRatio(effDPR());
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
   resizeOutroCanvas();
   if (StarfieldEffect.stars.length) StarfieldEffect.setup();
 };
@@ -1215,7 +1163,9 @@ function initAutoplay() {
         renderTunnel = val;
       }
     },
-    onComplete: () => {}
+    onComplete: () => {
+      setupInteractionListeners();
+    }
   };
 
   setTimeout(() => runAutoplay(dom, state, callbacks), 200);
