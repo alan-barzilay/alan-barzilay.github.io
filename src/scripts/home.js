@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { runAutoplay } from './landing/boot.js';
 import { currentCenterline } from './landing/centerline.js';
-import { initTweaksPanel } from './landing/tweaks.js';
 
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
@@ -372,16 +371,6 @@ function layoutRings() {
   });
 }
 buildTube(); // builds the tube meshes AND lays out the rings on the curve
-
-initTweaksPanel({
-  TEST,
-  callbacks: {
-    setActiveTube: (tube) => { activeTube = tube; buildTube(); },
-    setBlendMode: (mode) => { setBlendMode(mode); },
-    setLumGain: (val) => { setLumGain(val); },
-    requestTubeRebuild: () => { requestTubeRebuild(); }
-  }
-});
 
 // White particles inside the tube
 const ptGeo = new THREE.BufferGeometry();
@@ -1104,7 +1093,6 @@ function initAutoplay() {
     logoRight: document.getElementById('logoRight'),
     splashName: document.getElementById('splashName'),
     splashSub: document.getElementById('splashSub'),
-    tweaksPanel: document.getElementById('tweaks-panel'),
     canvas: document.getElementById('tunnel-canvas'),
     tunnelUI: document.getElementById('tunnel-ui'),
     splashInner: document.getElementById('splashInner'),
