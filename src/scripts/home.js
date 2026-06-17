@@ -58,7 +58,8 @@ const offscreenAllowed = new URLSearchParams(location.search).get('offscreen') !
 const supportsOffscreen = offscreenAllowed && !!(window.OffscreenCanvas && tunnelCanvas.transferControlToOffscreen && starCanvas.transferControlToOffscreen);
 
 let worker = null;
-let sceneApi = null; // set when the main-thread fallback scene is running
+let sceneApi = null;   // set when the main-thread fallback scene is running
+let autoplayDom = null; // the boot/splash DOM refs, kept live across a fallback canvas swap
 
 // ---- DOM references for the scene's style output ----
 const vaporEl = document.getElementById('vapor');
@@ -200,6 +201,9 @@ function fallbackToMainThread() {
   if (worker) { worker.terminate(); worker = null; }
   tunnelCanvas = replaceCanvas(tunnelCanvas);
   starCanvas = replaceCanvas(starCanvas);
+  // boot.js reveals the tunnel by setting opacity on its captured canvas ref —
+  // keep it pointing at the live node so the swap doesn't leave it blank.
+  if (autoplayDom) autoplayDom.canvas = tunnelCanvas;
   // the fresh canvases start from their CSS defaults — reset the change-detection
   // caches so the scene's first frame writes every style afresh onto them.
   lastHideNav = null; lastTunnelOpacity = -1; lastVaporVis = ''; lastVaporOpacity = '';
@@ -373,7 +377,9 @@ function initAutoplay() {
   updateScrollMax();
   updateScroll();
 
-  const dom = {
+  // module-scoped so a fallback canvas swap can keep `canvas` pointing at the
+  // live node (boot.js reveals the tunnel via dom.canvas.style.opacity)
+  autoplayDom = {
     bootLog: document.getElementById('bootLog'),
     bootEl: document.getElementById('boot'),
     splashEl: document.getElementById('splash'),
@@ -381,7 +387,7 @@ function initAutoplay() {
     logoRight: document.getElementById('logoRight'),
     splashName: document.getElementById('splashName'),
     splashSub: document.getElementById('splashSub'),
-    canvas: document.getElementById('tunnel-canvas'),
+    canvas: tunnelCanvas,
     tunnelUI: document.getElementById('tunnel-ui'),
     splashInner: document.getElementById('splashInner'),
     top: document.getElementById('top'),
@@ -409,7 +415,7 @@ function initAutoplay() {
     }
   };
 
-  setTimeout(() => runAutoplay(dom, state, callbacks), 200);
+  setTimeout(() => runAutoplay(autoplayDom, state, callbacks), 200);
 }
 
 if (document.readyState !== 'loading') {
