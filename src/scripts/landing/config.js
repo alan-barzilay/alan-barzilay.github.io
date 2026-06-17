@@ -69,15 +69,6 @@ export const TEST = {
 };
 
 // ============================================================
-// QUALITY / performance defaults — each renderer makes its own mutable
-// copy (`{ ...QUALITY_DEFAULTS }`) so console/URL overrides in one context
-// don't reach across the worker boundary.
-//   ?dpr=1          force the pixel-ratio cap (range 0.5–3). lower = faster + softer
-//   ?starscale=0.75 resolution multiplier for the 2D starfield (0.4–2)
-// ============================================================
-export const QUALITY_DEFAULTS = { dprCap: 1.5, starScale: 1.0 };
-
-// ============================================================
 // CHAPTERS — drives the card stage / ticks (main thread) AND the in-tube
 // station rings (both renderers use `.at` to place rings along the curve).
 // ============================================================

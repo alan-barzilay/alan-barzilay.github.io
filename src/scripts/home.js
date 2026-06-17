@@ -1,6 +1,6 @@
 import { runAutoplay } from './landing/boot.js';
 import TunnelWorker from './landing/tunnelWorker.js?worker';
-import { PHASES, TEST, CHAPTERS, QUALITY_DEFAULTS } from './landing/config.js';
+import { PHASES, TEST, CHAPTERS } from './landing/config.js';
 
 // ============================================================
 // MAIN-THREAD HOST for the landing page.
@@ -25,24 +25,6 @@ let introCancelled = false;
 let introPlaying = true;
 let renderTunnel = false;
 window.TEST = TEST;
-
-// ============================================================
-// QUALITY / performance knobs — tunable live + overridable from the URL:
-//   ?dpr=1        force the pixel-ratio cap (range 0.5–3). lower = faster + softer
-//   ?starscale=0.75   resolution multiplier for the 2D starfield (0.4–2)
-//   ?stats        show a live FPS / DPR / active-layer overlay
-// In the console you can also set e.g. QUALITY.dprCap = 1 then QUALITY.apply().
-// ============================================================
-const QUALITY = { ...QUALITY_DEFAULTS };
-(function () {
-  const q = new URLSearchParams(location.search);
-  if (q.has('dpr'))       QUALITY.dprCap    = Math.max(0.5, Math.min(3, parseFloat(q.get('dpr'))       || 1.5));
-  if (q.has('starscale')) QUALITY.starScale = Math.max(0.4, Math.min(2, parseFloat(q.get('starscale')) || 1));
-})();
-// DPR CLAMP — effective device-pixel-ratio = the real DPR, capped (used here for
-// the stats overlay; the scene caps the raw DPR it is handed the same way).
-function effDPR() { return Math.min(window.devicePixelRatio || 1, QUALITY.dprCap); }
-window.QUALITY = QUALITY;
 
 // cached viewport size — refreshed on resize
 let viewW = window.innerWidth, viewH = window.innerHeight;
@@ -111,28 +93,6 @@ function applyShift(x, y) {
 }
 
 // ============================================================
-// OPTIONAL ?stats OVERLAY — fed by the scene (fallback) or worker (offscreen).
-// ============================================================
-let statsEl = null;
-if (new URLSearchParams(location.search).has('stats')) {
-  statsEl = document.createElement('div');
-  statsEl.style.cssText = 'position:fixed;top:8px;left:8px;z-index:200;font:11px/1.55 ui-monospace,monospace;color:#6fc89a;background:rgba(7,12,10,.82);border:1px solid rgba(111,200,154,.35);padding:7px 10px;border-radius:5px;white-space:pre;pointer-events:none';
-  document.body.appendChild(statsEl);
-}
-function showStats(d) {
-  if (!statsEl) return;
-  const sScale = (effDPR() * QUALITY.starScale).toFixed(2);
-  const starInfo = d.starCount != null ? `${d.starCount} rays` : 'offscreen';
-  statsEl.textContent =
-    `fps    ${d.fps}\n` +
-    `dprCap ${QUALITY.dprCap}  → eff ${effDPR().toFixed(2)}\n` +
-    `device ${(window.devicePixelRatio || 1).toFixed(2)}\n` +
-    `star   ${sScale}×  (${starInfo})\n` +
-    `scroll ${d.scroll}%\n` +
-    `layers ${d.layers}`;
-}
-
-// ============================================================
 // RENDERER WIRING — worker (preferred) or main-thread fallback.
 // ============================================================
 if (supportsOffscreen) {
@@ -154,8 +114,6 @@ if (supportsOffscreen) {
       applyDomUpdate(data);
     } else if (data.type === 'shift') {
       applyShift(data.clear ? null : data.x, data.y);
-    } else if (data.type === 'stats') {
-      showStats(data);
     } else if (data.type === 'initError') {
       // the worker couldn't bring up WebGL — recover on the main thread
       fallbackToMainThread();
@@ -177,11 +135,9 @@ async function initMainThread() {
     width: viewW,
     height: viewH,
     dpr: window.devicePixelRatio || 1,
-    quality: QUALITY,
     onDomUpdate: applyDomUpdate,
     onShift: applyShift,
     onShadersReady: () => {},
-    onStats: showStats,
   });
   return sceneApi;
 }
@@ -314,11 +270,6 @@ function activeChapterFromP(p) {
 const pFill = document.getElementById('pFill');
 const pPct = document.getElementById('pPct');
 let lastFillW = '', lastPct = -1;
-
-// Re-apply quality settings after changing QUALITY.* live from the console.
-QUALITY.apply = function () {
-  if (sceneApi) sceneApi.applyQuality();
-};
 
 // ============================================================
 // MAIN-THREAD FRAME LOOP — always runs: drives the cards/progress UI and

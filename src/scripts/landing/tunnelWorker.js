@@ -8,9 +8,6 @@
 // main-thread fallback in home.js).
 // ============================================================
 import { createTunnelScene } from './tunnelScene.js';
-import { QUALITY_DEFAULTS } from './config.js';
-
-const QUALITY = { ...QUALITY_DEFAULTS };
 
 let sceneApi = null;
 let renderTunnel = false;
@@ -48,7 +45,6 @@ self.onmessage = function (e) {
           width: data.width,
           height: data.height,
           dpr: data.dpr,
-          quality: QUALITY,
           onDomUpdate: (s) => self.postMessage({
             type: 'domUpdate',
             hideNav: s.hideNav,
@@ -61,7 +57,6 @@ self.onmessage = function (e) {
           }),
           onShift: (x, y) => self.postMessage(x === null ? { type: 'shift', clear: true } : { type: 'shift', x, y }),
           onShadersReady: () => self.postMessage({ type: 'shadersReady' }),
-          onStats: (d) => self.postMessage({ type: 'stats', fps: d.fps, layers: d.layers, scroll: d.scroll }),
         });
         requestAnimationFrame(frame);
       } catch (err) {

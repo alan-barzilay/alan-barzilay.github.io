@@ -23,20 +23,22 @@ import * as THREE from 'three';
 import { currentCenterline } from './centerline.js';
 import { PHASES, TEST, CHAPTERS } from './config.js';
 
+// Cap the device-pixel-ratio we render at: on 2×/3× retina screens this stops
+// us drawing 4–9× the pixels for no visible gain (the single biggest GPU cost).
+const DPR_CAP = 1.5;
+
 export function createTunnelScene({
   tunnelCanvas,
   starCanvas,
   width,
   height,
   dpr,
-  quality,          // mutable { dprCap, starScale } owned by the host
   onDomUpdate,      // (state) => void   apply vapor/tunnel style state
   onShift,          // (x, y) => void    starfield canvas translate; x===null clears
   onShadersReady,   // () => void
-  onStats,          // (data) => void    optional dev overlay feed
 }) {
   let viewW = width, viewH = height, viewDPR = dpr;
-  function effDPR() { return Math.min(viewDPR, quality.dprCap); }
+  function effDPR() { return Math.min(viewDPR, DPR_CAP); }
 
   // ---- scene / camera / renderer ----
   const renderer = new THREE.WebGLRenderer({ canvas: tunnelCanvas, antialias: true, alpha: true });
@@ -332,9 +334,9 @@ export function createTunnelScene({
   };
 
   function resizeOutroCanvas() {
-    // render the starfield at (clamped DPR × starScale); keep the CSS box at
-    // viewport size so it still fills the screen, just at a capped resolution.
-    const scale = effDPR() * quality.starScale;
+    // render the starfield at the clamped DPR; keep the CSS box at viewport
+    // size so it still fills the screen, just at a capped resolution.
+    const scale = effDPR();
     starCanvas._renderScale = scale;
     starCanvas.width = Math.round(viewW * scale);
     starCanvas.height = Math.round(viewH * scale);
@@ -532,7 +534,6 @@ export function createTunnelScene({
   // PER-FRAME — host owns the rAF loop + scroll smoothing and calls this once
   // per tick with the already-smoothed scroll position `p`.
   // ============================================================
-  let statsFrames = 0, statsLast = 0;
   function renderFrame(nowMs, dt, p, renderTunnel, introPlaying) {
     updateLayers(p);
 
@@ -603,19 +604,6 @@ export function createTunnelScene({
     if (outroActive) {
       StarfieldEffect.draw(dt);
     }
-
-    if (onStats) {
-      statsFrames++;
-      if (nowMs - statsLast >= 500) {
-        onStats({
-          fps: (statsFrames * 1000 / (nowMs - statsLast)).toFixed(0),
-          layers: (tunnelVisible ? 'GL ' : '·· ') + (outroActive ? '2D' : '··'),
-          scroll: (p * 100).toFixed(0),
-          starCount: StarfieldEffect.stars.length,
-        });
-        statsFrames = 0; statsLast = nowMs;
-      }
-    }
   }
 
   function resize(w, h, newDpr) {
@@ -627,13 +615,5 @@ export function createTunnelScene({
     resizeOutroCanvas();
   }
 
-  // re-apply quality after changing quality.* live (e.g. from the console)
-  function applyQuality() {
-    renderer.setPixelRatio(effDPR());
-    renderer.setSize(viewW, viewH, false);
-    resizeOutroCanvas();
-    if (StarfieldEffect.stars.length) StarfieldEffect.setup();
-  }
-
-  return { renderFrame, resize, applyQuality };
+  return { renderFrame, resize };
 }
