@@ -168,17 +168,29 @@ export function createTunnelScene({
   // stall the boot-log typing. The tunnel canvas is invisible until the splash
   // fades, so deferring the first GL render until ready is invisible.
   // ============================================================
-  let shadersReady = true;
+  let shadersReady = false;
   if (typeof renderer.compileAsync === 'function') {
     renderer.compileAsync(scene, camera)
       .then(() => {
         renderer.render(scene, camera); // warm compile/link caches behind the boot screen
+        shadersReady = true;
         onShadersReady();
       })
       .catch(() => {
+        shadersReady = true; // never leave the tunnel un-rendered
         onShadersReady();
       });
+
+    // Safety timeout: if compileAsync hangs or is extremely slow, force shadersReady = true
+    // after 5 seconds (safely before the ~7s intro completes) so the user is never left with a blank screen.
+    setTimeout(() => {
+      if (!shadersReady) {
+        shadersReady = true;
+        onShadersReady();
+      }
+    }, 5000);
   } else {
+    shadersReady = true; // older three.js: fall back to a synchronous first-render compile
     onShadersReady();
   }
 
@@ -506,6 +518,9 @@ export function createTunnelScene({
   // per tick with the already-smoothed scroll position `p`.
   // ============================================================
   function renderFrame(nowMs, dt, p, renderTunnel, introPlaying) {
+    if (p > 0) {
+      shadersReady = true;
+    }
     updateLayers(p);
 
     // SKIP INVISIBLE LAYERS — the tunnel canvas fades to 0 at tunnelFlash; past

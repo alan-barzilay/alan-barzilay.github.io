@@ -208,6 +208,8 @@ function updateScroll() {
 }
 
 function setupInteractionListeners() {
+  updateScrollMax();
+  updateScroll();
   window.addEventListener('scroll', updateScroll, { passive: true });
 
   const trackEl = document.getElementById('track');
