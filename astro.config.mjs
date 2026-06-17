@@ -7,6 +7,7 @@ import mdx from '@astrojs/mdx';
 
 import remarkToc from 'remark-toc';
 import { remarkReadingTime } from './remark-reading-time.mjs';
+import { remarkMathDetector } from './remark-math-detector.mjs';
 import remarkMath from 'remark-math';
 
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -20,6 +21,9 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 export default defineConfig({
   site: 'https://alan-barzilay.github.io',
   integrations: [sitemap(), mdx()],
+  image: {
+    domains: ['images.unsplash.com'],
+  },
 
   vite: {
     plugins: [tailwindcss(), visualizer()],
@@ -34,7 +38,7 @@ export default defineConfig({
   },
   markdown: {
     processor: unified({
-      remarkPlugins: [remarkReadingTime, remarkMath, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
+      remarkPlugins: [remarkReadingTime, remarkMath, remarkMathDetector, [remarkToc, { heading: 'Summary', maxDepth: 6 }]],
       rehypePlugins: [
         [
           rehypeExternalLinks,

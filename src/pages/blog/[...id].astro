@@ -23,7 +23,7 @@ const components = {
 };
 ---
 
-<BlogLayout title={post.data.title} bodyClass={body_class}>
+<BlogLayout title={post.data.title} bodyClass={body_class} loadKatex={remarkPluginFrontmatter?.hasMath}>
   <div class="relative min-h-64 w-full max-w-4xl mx-auto">
     <CardContent
       title={post.data.title}
