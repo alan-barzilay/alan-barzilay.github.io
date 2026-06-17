@@ -25,17 +25,15 @@ export const PHASES = {
 };
 
 // ============================================================
-// TEST CONTROLS STATE — tweak speed & directions live
+// CONFIG CONTROLS STATE — tweak speed & directions live
 // ============================================================
-export const TEST = {
+export const CONFIG = {
   starVelocity: 5,   // single starfield speed (no tiering)
   starDir: 1,        //  1 = forward (fly into stars)   · -1 = reverse (recede)
   starFocalY: 0.5,   // vertical position of the rays' vanishing point, as a fraction of canvas height (0 = top)
   contentRise: 0.92, // SCROLL position where the outro text/cards rise — later = more pure-starfield time before content appears
   particleDir: -1,   //  1 = forward (drift downstream)  · -1 = reverse (drift back)
   emerge: true,      // reveal the starfield out of the tube as we scroll
-  emergeGlow: false, // optional lit-glow under the reveal — OFF
-  emergeBehind: false,  // CHANGED: no longer using screen-blend since canvas is now transparent
   outroBgMatch: true,  // outro/starfield background uses the tube color (#070c0a) vs pure black
   // ---- single continuous reveal (replaces the tier system) ----
   // One starfield. We grow a soft circular mask, centred on the screen, from a
@@ -52,17 +50,12 @@ export const TEST = {
   // Pushes the entrance sideways so the wall hides the distance at 0% scroll,
   // easing back to centre by `startBendLen` so the rest is revealed as the
   // camera rounds the lead-in bend. Live-tunable from the panel.
-  startBend: 15,        // sharp lateral bend amount at the entrance (0 = off)  [FINAL]
-  startBendLen: 0.10,   // how far down the tube the bend zone reaches (0..1)    [FINAL]
-  startBendAngle: 260,  // direction in degrees (0=right, 90=up, 180=left, 270=down) [FINAL]
-  // rays vs opening — how the starfield's vanishing point relates to the moving tube opening:
-  //  'follow' — focal tracks the opening directly (original; trails smear while it moves)
-  //  'fade'   — same as follow, but the trail fade strengthens while the focal moves (wipes stale streaks)
-  //  'shift'  — focal fixed at canvas centre; the CANVAS element is translated onto the opening,
-  //             so the trail history moves rigidly with the field (no smear, trails intact)
-  //  'fixed'  — focal pinned at screen centre / focalY, never moves (mask alone tracks the opening)
-  rayMode: 'fade',
-  // 'fade' mode tuning:
+  startBend: 15,        // sharp lateral bend amount at the entrance (0 = off)
+  startBendLen: 0.10,   // how far down the tube the bend zone reaches (0..1)
+  startBendAngle: 260,  // direction in degrees (0=right, 90=up, 180=left, 270=down)
+  // ---- trail fade ('fade' mode) tuning ----
+  // Wipes the starfield trails harder while the camera/focal point is moving
+  // to prevent stale smearing, and settles back to longer trails when static.
   fadeBase: 0.18,  // trail fade at rest (higher = shorter trails everywhere)
   fadeGain: 0.05,  // how strongly focal-point motion increases the wipe (px of movement → extra fade)
   fadeMax:  0.85,  // cap on the wipe while moving (1 = full clear each frame, no trails during motion)

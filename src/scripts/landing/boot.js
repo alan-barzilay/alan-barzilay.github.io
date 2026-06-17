@@ -1,6 +1,3 @@
-// ============================================================
-// BOOT LOGS DATA
-// ============================================================
 const BOOT_LOGS = [
   { kind:'ok',   body:"firmware revision 0x2b loaded" },
   { kind:'ok',   body:"mounting /dev/sda1, readonly: true" },

@@ -1,6 +1,6 @@
 import { runAutoplay } from './landing/boot.js';
 import TunnelWorker from './landing/tunnelWorker.js?worker';
-import { PHASES, TEST, CHAPTERS } from './landing/config.js';
+import { PHASES, CONFIG, CHAPTERS } from './landing/config.js';
 
 // ============================================================
 // MAIN-THREAD HOST for the landing page.
@@ -24,7 +24,7 @@ window.scrollTo(0, 0);
 let introCancelled = false;
 let introPlaying = true;
 let renderTunnel = false;
-window.TEST = TEST;
+window.CONFIG = CONFIG;
 
 // cached viewport size — refreshed on resize
 let viewW = window.innerWidth, viewH = window.innerHeight;
@@ -43,7 +43,6 @@ let autoplayDom = null; // the boot/splash DOM refs, kept live across a fallback
 // ---- DOM references for the scene's style output ----
 const vaporEl = document.getElementById('vapor');
 const vaporContentEl = document.querySelector('.vapor-content');
-const vaporGlowEl = document.getElementById('vaporGlow');
 const topEl   = document.getElementById('top');
 const tunnelUIEl = document.getElementById('tunnel-ui');
 
@@ -54,7 +53,7 @@ const tunnelUIEl = document.getElementById('tunnel-ui');
 // fields are constant for long stretches of the scroll).
 // ============================================================
 let lastHideNav = null, lastTunnelOpacity = -1, lastVaporVis = '', lastVaporOpacity = '';
-let lastMask = '', lastCe = -1, lastGlow = -1;
+let lastMask = '', lastCe = -1;
 function applyDomUpdate(s) {
   if (s.hideNav !== lastHideNav) {
     lastHideNav = s.hideNav;
@@ -83,13 +82,6 @@ function applyDomUpdate(s) {
     vaporContentEl.style.transform = `translateY(${(1 - s.contentRise) * 110}px)`;
     vaporContentEl.style.opacity = s.contentRise;
   }
-  if (s.glow !== lastGlow) {
-    lastGlow = s.glow;
-    vaporGlowEl.style.opacity = s.glow;
-  }
-}
-function applyShift(x, y) {
-  starCanvas.style.transform = x === null ? '' : `translate(${x}px, ${y}px)`;
 }
 
 // ============================================================
@@ -112,8 +104,6 @@ if (supportsOffscreen) {
     const data = e.data;
     if (data.type === 'domUpdate') {
       applyDomUpdate(data);
-    } else if (data.type === 'shift') {
-      applyShift(data.clear ? null : data.x, data.y);
     } else if (data.type === 'initError') {
       // the worker couldn't bring up WebGL — recover on the main thread
       fallbackToMainThread();
@@ -136,7 +126,6 @@ async function initMainThread() {
     height: viewH,
     dpr: window.devicePixelRatio || 1,
     onDomUpdate: applyDomUpdate,
-    onShift: applyShift,
     onShadersReady: () => {},
   });
   return sceneApi;
@@ -160,7 +149,7 @@ function fallbackToMainThread() {
   // the fresh canvases start from their CSS defaults — reset the change-detection
   // caches so the scene's first frame writes every style afresh onto them.
   lastHideNav = null; lastTunnelOpacity = -1; lastVaporVis = ''; lastVaporOpacity = '';
-  lastMask = ''; lastCe = -1; lastGlow = -1;
+  lastMask = ''; lastCe = -1;
   initMainThread();
 }
 function replaceCanvas(oldEl) {

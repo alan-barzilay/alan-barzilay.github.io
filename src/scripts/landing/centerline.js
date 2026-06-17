@@ -32,11 +32,11 @@ function snakePath({ yawAmp, yawFreq, pitchAmp = 0.6, pitchFreq = 2, pitchPhase 
   return pts;
 }
 
-function applyEndBend(pts, TEST) {
-  const amt = TEST.endBend, startF = TEST.endBendStart;
+function applyEndBend(pts, CONFIG) {
+  const amt = CONFIG.endBend, startF = CONFIG.endBendStart;
   if (!amt) return pts;
   const n = pts.length;
-  const a = TEST.bendAngle * Math.PI / 180;
+  const a = CONFIG.bendAngle * Math.PI / 180;
   const dir = new THREE.Vector3(Math.cos(a), Math.sin(a), 0);
   return pts.map((p, i) => {
     const t = i / (n - 1);
@@ -47,8 +47,8 @@ function applyEndBend(pts, TEST) {
   });
 }
 
-function applyStartBend(pts, TEST) {
-  const amt = TEST.startBend, until = TEST.startBendLen, angle = TEST.startBendAngle;
+function applyStartBend(pts, CONFIG) {
+  const amt = CONFIG.startBend, until = CONFIG.startBendLen, angle = CONFIG.startBendAngle;
   if (!amt) return pts;
   const n = pts.length;
   const a = angle * Math.PI / 180;
@@ -62,13 +62,12 @@ function applyStartBend(pts, TEST) {
   });
 }
 
-export function currentCenterline(shapeName, TEST) {
-  // Only the 'v1d' variant is used in practice.
+export function currentCenterline(shapeName, CONFIG) {
   return applyStartBend(
     applyEndBend(
       snakePath({ yawAmp: 1.2, yawFreq: 1.5, pitchAmp: 0.42, pitchFreq: 1.1 }),
-      TEST
+      CONFIG
     ),
-    TEST
+    CONFIG
   );
 }

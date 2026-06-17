@@ -21,7 +21,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { currentCenterline } from './centerline.js';
-import { PHASES, TEST, CHAPTERS } from './config.js';
+import { PHASES, CONFIG, CHAPTERS } from './config.js';
 
 // Cap the device-pixel-ratio we render at: on 2×/3× retina screens this stops
 // us drawing 4–9× the pixels for no visible gain (the single biggest GPU cost).
@@ -34,7 +34,6 @@ export function createTunnelScene({
   height,
   dpr,
   onDomUpdate,      // (state) => void   apply vapor/tunnel style state
-  onShift,          // (x, y) => void    starfield canvas translate; x===null clears
   onShadersReady,   // () => void
 }) {
   let viewW = width, viewH = height, viewDPR = dpr;
@@ -88,7 +87,7 @@ export function createTunnelScene({
   let activeTube = 'v1d';
 
   function buildTube() {
-    curve = new THREE.CatmullRomCurve3(currentCenterline(activeTube, TEST), false, 'catmullrom', 0.5);
+    curve = new THREE.CatmullRomCurve3(currentCenterline(activeTube, CONFIG), false, 'catmullrom', 0.5);
     refreshCurveCache();
     if (tubeMesh1) { scene.remove(tubeMesh1); tubeMesh1.geometry.dispose(); }
     if (tubeMesh2) { scene.remove(tubeMesh2); tubeMesh2.geometry.dispose(); }
@@ -211,14 +210,7 @@ export function createTunnelScene({
     STAR_BIN_LW.push(Math.min(2.5, 1.2 + b / (STAR_BIN_COUNT - 1)));
   }
 
-  // onShift dedup — only notify the host when the starfield translate changes
-  let lastShiftKey = '';
-  function emitShift(x, y) {
-    const key = x === null ? 'clear' : `${x},${y}`;
-    if (key === lastShiftKey) return;
-    lastShiftKey = key;
-    onShift(x, y);
-  }
+
 
   const StarfieldEffect = {
     stars: [],
@@ -237,7 +229,7 @@ export function createTunnelScene({
       const scale = starCanvas._renderScale || 1;
       const W = starCanvas.width / scale, H = starCanvas.height / scale; // logical (CSS px) size
       this.cx = W / 2;
-      this.cy = H * TEST.starFocalY;
+      this.cy = H * CONFIG.starFocalY;
       this.stars = [];
       const count = 340;
       for (let i = 0; i < count; i++) {
@@ -252,38 +244,23 @@ export function createTunnelScene({
       const scale = starCanvas._renderScale || 1;
       const W = starCanvas.width / scale, H = starCanvas.height / scale;
 
-      // ---- rays vs opening: pick the vanishing point per mode ----
-      const mode = TEST.rayMode;
-      let fx = W / 2, fy = H * TEST.starFocalY; // 'fixed' default
-      if ((mode === 'follow' || mode === 'fade') && revealFocalValid) {
+      // ---- rays vs opening: vanishing point tracks the opening ----
+      let fx = W / 2, fy = H * CONFIG.starFocalY;
+      if (revealFocalValid) {
         fx = revealFocalX;
         fy = revealFocalY;
-      } else if (mode === 'shift') {
-        fx = W / 2;
-        fy = H / 2; // internal focal never moves; the CANVAS moves instead
       }
       this.cx = fx;
       this.cy = fy;
 
-      // ---- trail fade: 'fade' mode wipes harder while the focal is moving ----
-      let fade = TEST.fadeBase;
-      if (mode === 'fade') {
-        const mvx = fx - (this._pfx ?? fx), mvy = fy - (this._pfy ?? fy);
-        fade = Math.min(TEST.fadeMax, TEST.fadeBase + Math.hypot(mvx, mvy) * TEST.fadeGain);
-      }
+      // ---- trail fade: wipes harder while the focal point is moving to prevent smearing ----
+      const mvx = fx - (this._pfx ?? fx), mvy = fy - (this._pfy ?? fy);
+      const fade = Math.min(CONFIG.fadeMax, CONFIG.fadeBase + Math.hypot(mvx, mvy) * CONFIG.fadeGain);
       this._pfx = fx; this._pfy = fy;
-      starCtx.fillStyle = TEST.outroBgMatch ? `rgba(7, 12, 10, ${fade.toFixed(3)})` : `rgba(0, 0, 0, ${fade.toFixed(3)})`;
+      starCtx.fillStyle = CONFIG.outroBgMatch ? `rgba(7, 12, 10, ${fade.toFixed(3)})` : `rgba(0, 0, 0, ${fade.toFixed(3)})`;
       starCtx.fillRect(0, 0, W, H);
 
-      // ---- 'shift' mode: translate the canvas ELEMENT onto the opening, so the
-      // trail history moves rigidly with the field (no smearing) ----
-      if (mode === 'shift' && revealFocalValid) {
-        emitShift((revealFocalX - W / 2).toFixed(1), (revealFocalY - H / 2).toFixed(1));
-      } else {
-        emitShift(null);
-      }
-
-      const velocity = TEST.starVelocity * TEST.starDir;
+      const velocity = CONFIG.starVelocity * CONFIG.starDir;
       const stars = this.stars, fov2 = this.fov, scx = this.cx, scy = this.cy;
       const dz = velocity * dt;
 
@@ -359,16 +336,15 @@ export function createTunnelScene({
   // reused scratch state object — no per-frame allocation crossing the boundary
   const _dom = {
     hideNav: false, tunnelOpacity: 1, vaporOpacity: '0', vaporVisibility: 'hidden',
-    mask: 'none', contentRise: 0, glow: 0,
+    mask: 'none', contentRise: 0,
   };
-  function emitDom(hideNav, tunnelOpacity, vaporOpacity, vaporVisibility, mask, contentRise, glow) {
+  function emitDom(hideNav, tunnelOpacity, vaporOpacity, vaporVisibility, mask, contentRise) {
     _dom.hideNav = hideNav;
     _dom.tunnelOpacity = tunnelOpacity;
     _dom.vaporOpacity = vaporOpacity;
     _dom.vaporVisibility = vaporVisibility;
     _dom.mask = mask;
     _dom.contentRise = contentRise;
-    _dom.glow = glow;
     onDomUpdate(_dom);
   }
 
@@ -400,7 +376,7 @@ export function createTunnelScene({
       : 1;
 
     // starfield emerge owns the vapor reveal across a wider range
-    if (TEST.emerge) {
+    if (CONFIG.emerge) {
       updateEmerge(p, shouldHideNav, tunnelOpacity);
       return;
     }
@@ -412,11 +388,11 @@ export function createTunnelScene({
       const wasActive = outroActive;
       outroActive = t > 0.05;
       if (outroActive && !wasActive) StarfieldEffect.setup();
-      emitDom(shouldHideNav, tunnelOpacity, (t*t*(3-2*t)).toFixed(3), 'visible', 'none', t, 0);
+      emitDom(shouldHideNav, tunnelOpacity, (t*t*(3-2*t)).toFixed(3), 'visible', 'none', t);
     } else {
       vaporHidden = true;
       outroActive = false;
-      emitDom(shouldHideNav, tunnelOpacity, '0', 'hidden', 'none', 0, 0);
+      emitDom(shouldHideNav, tunnelOpacity, '0', 'hidden', 'none', 0);
     }
   }
 
@@ -431,15 +407,15 @@ export function createTunnelScene({
 
     // align safety gate: 0 while the sharp bend hides the opening → 1 once we're
     // looking down the barrel. Keeps the field from bleeding mid-bend.
-    const gate = smoothstep(clamp01((alignSmooth - TEST.revealAlign) / 0.18));
+    const gate = smoothstep(clamp01((alignSmooth - CONFIG.revealAlign) / 0.18));
     // continuous scroll-driven growth: 0 at revealStartP → 1 at revealFullP
-    const span = Math.max(0.001, TEST.revealFullP - TEST.revealStartP);
-    const growth = smoothstep(clamp01((p - TEST.revealStartP) / span));
+    const span = Math.max(0.001, CONFIG.revealFullP - CONFIG.revealStartP);
+    const growth = smoothstep(clamp01((p - CONFIG.revealStartP) / span));
     // Once the reveal has begun opening, LATCH it open (growth only rises after
     // revealStartP, well past the bend, so latching can't cause early bleed).
     const effGate = Math.max(gate, growth);
     // lead-in factor: 0 until just shy of revealStartP — skip projecting while 0.
-    const lead = smoothstep(clamp01((p - (TEST.revealStartP - 0.02)) / 0.02));
+    const lead = smoothstep(clamp01((p - (CONFIG.revealStartP - 0.02)) / 0.02));
 
     const op = (lead > 0 && effGate > 0) ? projectTubeOpening() : null;
     const vw = viewW, vh = viewH;
@@ -462,8 +438,7 @@ export function createTunnelScene({
         maskDropped = false;         // re-arm the mask so it re-applies on re-entry
         openSmoothX = null;          // re-seed the opening smoother on next entry
         openSmoothY = null;
-        emitDom(shouldHideNav, tunnelOpacity, '0', 'hidden', 'none', 0, 0);
-        emitShift(null);             // clear any 'shift' offset
+        emitDom(shouldHideNav, tunnelOpacity, '0', 'hidden', 'none', 0);
       }
       return;
     }
@@ -501,7 +476,7 @@ export function createTunnelScene({
     }
 
     const coverR = Math.hypot(w, h) * 0.5 + 4;          // radius that fully covers the viewport
-    const rad = lerp(TEST.revealR0, coverR, growth);    // small → fullscreen, continuous
+    const rad = lerp(CONFIG.revealR0, coverR, growth);    // small → fullscreen, continuous
 
     // share the centre out so the starfield rays can emanate from it too
     revealFocalX = maskCx;
@@ -522,12 +497,11 @@ export function createTunnelScene({
     }
 
     // content rises on SCROLL — a stretch of pure full-screen starfield first.
-    const cStart = TEST.contentRise;
+    const cStart = CONFIG.contentRise;
     const cEnd = Math.min(1.0, cStart + 0.02);
     const ce = smoothstep(clamp01((p - cStart) / (cEnd - cStart)));
-    const glow = TEST.emergeGlow ? ((0.10 + 0.28 * growth) * (1 - ce)).toFixed(3) : 0;
 
-    emitDom(shouldHideNav, tunnelOpacity, vaporOpacity, 'visible', mask, ce, glow);
+    emitDom(shouldHideNav, tunnelOpacity, vaporOpacity, 'visible', mask, ce);
   }
 
   // ============================================================
@@ -577,7 +551,7 @@ export function createTunnelScene({
       // particles ride the precomputed curve LUT — two array reads + a lerp per
       // particle, instead of an arc-length search + Vector3 alloc each (700×/frame)
       const arr = ptGeo.attributes.position.array;
-      const drift = 0.00018 * TEST.particleDir * dt;
+      const drift = 0.00018 * CONFIG.particleDir * dt;
       const aOff = nowMs * 0.0001;
       for (let i = 0; i < ptCount; i++) {
         let tt = ptSeeds[i*3] + drift;

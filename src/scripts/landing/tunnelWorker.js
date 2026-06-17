@@ -53,9 +53,7 @@ self.onmessage = function (e) {
             vaporVisibility: s.vaporVisibility,
             mask: s.mask,
             contentRise: s.contentRise,
-            glow: s.glow,
           }),
-          onShift: (x, y) => self.postMessage(x === null ? { type: 'shift', clear: true } : { type: 'shift', x, y }),
           onShadersReady: () => self.postMessage({ type: 'shadersReady' }),
         });
         requestAnimationFrame(frame);
