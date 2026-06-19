@@ -18,6 +18,8 @@ import rehypeKatex from 'rehype-katex';
 import { rehypeHeadingIds, unified } from '@astrojs/markdown-remark';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
+import { tunnelGeometryPlugin } from './tunnel-geometry-plugin.mjs';
+
 export default defineConfig({
   site: 'https://alan-barzilay.github.io',
   integrations: [sitemap(), mdx()],
@@ -26,7 +28,7 @@ export default defineConfig({
   },
 
   vite: {
-    plugins: [tailwindcss(), visualizer()],
+    plugins: [tailwindcss(), visualizer(), tunnelGeometryPlugin()],
     assetsInclude: [
       // Need this because of extensionless slide images
       // \/src\/raw_slides\/  -> Look inside src/raw_slides
