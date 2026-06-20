@@ -17,7 +17,6 @@ if ('scrollRestoration' in history) {
 }
 window.scrollTo(0, 0);
 
-let introCancelled = false;
 let introPlaying = true;
 let renderTunnel = false;
 window.CONFIG = CONFIG;
@@ -29,6 +28,18 @@ const tunnelCanvas = document.getElementById('tunnel-canvas');
 const starCanvas = document.getElementById('showcase-canvas');
 
 let sceneApi = null;   // set once the dynamically-imported scene is live
+
+// ---- SCENE-READY SIGNAL ----
+// The intro autoplay must not reveal the tunnel canvas (or run its GPU "warm-up"
+// frames) until the scene actually exists AND its shaders are compiled —
+// otherwise the warm-up renders nothing and the first *visible* frame is the one
+// that stalls. `initScene()` is async (it dynamically imports three.js), so we
+// expose a promise the autoplay awaits; it resolves only when the scene fires
+// `onShadersReady`. If the scene never loads the intro simply never hands off —
+// that's the correct outcome: we'd rather hold on the intro than reveal a
+// tube-less page.
+let resolveSceneReady;
+const sceneReady = new Promise((res) => { resolveSceneReady = res; });
 
 // ---- DOM references for the scene's style output ----
 const vaporEl = document.getElementById('vapor');
@@ -90,7 +101,7 @@ async function initScene() {
     height: viewH,
     dpr: window.devicePixelRatio || 1,
     onDomUpdate: applyDomUpdate,
-    onShadersReady: () => {},
+    onShadersReady: resolveSceneReady,
   });
   return sceneApi;
 }
@@ -259,15 +270,23 @@ function initAutoplay() {
   };
 
   const state = {
-    get introCancelled() { return introCancelled; },
-    set introCancelled(val) { introCancelled = val; },
     get introPlaying() { return introPlaying; },
     set introPlaying(val) { introPlaying = val; },
   };
 
   const callbacks = {
     setRenderTunnel: (val) => { renderTunnel = val; },
+    // gate the GPU warm-up + canvas reveal on the scene being live & compiled
+    whenSceneReady: () => sceneReady,
     onComplete: () => {
+      // Hand off to scroll EXACTLY where the page physically is. The intro keeps
+      // scrollY pinned at 0 (scroll is locked), so this is normally a no-op — but
+      // snapping smoothP to scrollP here guarantees the tube starts 1:1 with the
+      // scrollbar instead of easing across a stale gap, so the first scroll input
+      // gets an immediate response rather than a delayed catch-up sweep.
+      updateScrollMax();
+      updateScroll();
+      smoothP = scrollP;
       setupInteractionListeners();
     }
   };

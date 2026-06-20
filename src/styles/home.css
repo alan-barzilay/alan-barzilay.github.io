@@ -25,6 +25,12 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
   display: none; /* Hide default scrollbar in Chrome/Safari/Opera */
 }
 html, body { scroll-behavior: auto; }
+/* SCROLL LOCK — the page's scroll container is the <html> element, not <body>:
+   because `html` has `overflow-x: hidden` (above) its `overflow-y` computes to
+   `auto`, so html (not body) owns the viewport scroll. Locking only
+   `body.locked { overflow:hidden }` therefore did NOTHING. Lock the real
+   scroller (html) while the intro autoplay holds the `locked` class on body. */
+html:has(body.locked) { overflow: hidden; }
 body.locked { overflow: hidden; }
 
 ::selection { background: #fff; color: #000; }
