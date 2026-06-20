@@ -150,11 +150,17 @@ export function createTunnelScene({
   const ptCount = 700;
   const ptGeo = new THREE.BufferGeometry();
   const ptPos = new Float32Array(ptCount * 3);
-  const ptSeeds = new Float32Array(ptCount * 3);
+  // Storing: [initial_tt, cos(initial_angle), sin(initial_angle), radius] for each particle
+  const ptSeeds = new Float32Array(ptCount * 4);
   for (let i = 0; i < ptCount; i++) {
-    ptSeeds[i*3] = Math.random();
-    ptSeeds[i*3+1] = Math.random() * Math.PI * 2;
-    ptSeeds[i*3+2] = 1.8 + Math.random() * 3.4;
+    const initTt = Math.random();
+    const initAngle = Math.random() * Math.PI * 2;
+    const r = 1.8 + Math.random() * 3.4;
+
+    ptSeeds[i*4] = initTt;
+    ptSeeds[i*4+1] = Math.cos(initAngle);
+    ptSeeds[i*4+2] = Math.sin(initAngle);
+    ptSeeds[i*4+3] = r;
   }
   ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPos, 3));
   const points = new THREE.Points(ptGeo, new THREE.PointsMaterial({
@@ -556,21 +562,33 @@ export function createTunnelScene({
       // particles ride the precomputed curve LUT — two array reads + a lerp per
       // particle, instead of an arc-length search + Vector3 alloc each (700×/frame)
       const arr = ptGeo.attributes.position.array;
-      const drift = 0.00018 * CONFIG.particleDir * dt;
+      const elapsedDrift = nowMs * 0.0000108 * CONFIG.particleDir;
       const aOff = nowMs * 0.0001;
+      const cosAOff = Math.cos(aOff);
+      const sinAOff = Math.sin(aOff);
+
       for (let i = 0; i < ptCount; i++) {
-        let tt = ptSeeds[i*3] + drift;
-        if (tt > 1) tt -= 1; else if (tt < 0) tt += 1;
-        ptSeeds[i*3] = tt;
-        const a = ptSeeds[i*3+1] + aOff;
-        const r = ptSeeds[i*3+2];
+        // Deterministic progress along the curve (using float modulo)
+        let tt = ptSeeds[i*4] + elapsedDrift;
+        tt = tt - Math.floor(tt);
+
+        // Pre-computed trig identity rotation:
+        // cos(init + aOff) = cos_init * cos_aoff - sin_init * sin_aoff
+        // sin(init + aOff) = sin_init * cos_aoff + cos_init * sin_aoff
+        const cosInit = ptSeeds[i*4+1];
+        const sinInit = ptSeeds[i*4+2];
+        const cosA = cosInit * cosAOff - sinInit * sinAOff;
+        const sinA = sinInit * cosAOff + cosInit * sinAOff;
+
+        const r = ptSeeds[i*4+3];
         const f = tt * (CURVE_LUT_N - 1);
         const i0 = f | 0;
         const i1 = i0 < CURVE_LUT_N - 1 ? i0 + 1 : i0;
         const fr = f - i0;
         const b0 = i0 * 3, b1 = i1 * 3;
-        arr[i*3]   = curveLUT[b0]   + (curveLUT[b1]   - curveLUT[b0])   * fr + Math.cos(a) * r;
-        arr[i*3+1] = curveLUT[b0+1] + (curveLUT[b1+1] - curveLUT[b0+1]) * fr + Math.sin(a) * r;
+
+        arr[i*3]   = curveLUT[b0]   + (curveLUT[b1]   - curveLUT[b0])   * fr + cosA * r;
+        arr[i*3+1] = curveLUT[b0+1] + (curveLUT[b1+1] - curveLUT[b0+1]) * fr + sinA * r;
         arr[i*3+2] = curveLUT[b0+2] + (curveLUT[b1+2] - curveLUT[b0+2]) * fr;
       }
       ptGeo.attributes.position.needsUpdate = true;
