@@ -175,18 +175,19 @@ export function createTunnelScene({
   // and it's hidden behind the boot screen — worst case a single-frame hitch in
   // the boot-log typing on Firefox.
   // ============================================================
-  let shadersReady = true;
+  // shadersReady gates the first render until the GPU program is linked, and is
+  // the signal the host awaits (via onShadersReady) before revealing the canvas.
+  let shadersReady = false;
+  const markReady = () => { shadersReady = true; onShadersReady(); };
   if (typeof renderer.compileAsync === 'function') {
     renderer.compileAsync(scene, camera)
       .then(() => {
         renderer.render(scene, camera); // warm compile/link caches behind the boot screen
-        onShadersReady();
+        markReady();
       })
-      .catch(() => {
-        onShadersReady();
-      });
+      .catch(markReady);
   } else {
-    onShadersReady();
+    markReady();
   }
 
   // ============================================================

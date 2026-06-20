@@ -167,7 +167,14 @@ export async function runAutoplay(dom, state, callbacks) {
   await sleep(1600);
   if (state.introCancelled) return;
 
-  // 5. start WebGL and warm up the renderer in the background (invisible)
+  // 5. start WebGL and warm up the renderer in the background (invisible).
+  // Wait for the scene to actually exist and finish compiling its shaders before
+  // we hand it any frames — the dynamic three.js import may still be in flight.
+  // Without this gate the warm-up below renders into a null/uncompiled scene and
+  // the stall just moves to the first VISIBLE frame at reveal.
+  if (callbacks.whenSceneReady) await callbacks.whenSceneReady();
+  if (state.introCancelled) return;
+
   if (callbacks.setRenderTunnel) callbacks.setRenderTunnel(true);
   state.introPlaying = false;
 

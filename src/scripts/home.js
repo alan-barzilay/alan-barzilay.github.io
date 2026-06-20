@@ -30,6 +30,19 @@ const starCanvas = document.getElementById('showcase-canvas');
 
 let sceneApi = null;   // set once the dynamically-imported scene is live
 
+// ---- SCENE-READY SIGNAL ----
+// The intro autoplay must not reveal the tunnel canvas (or run its GPU "warm-up"
+// frames) until the scene actually exists AND its shaders are compiled —
+// otherwise the warm-up renders nothing and the first *visible* frame is the one
+// that stalls. `initScene()` is async (it dynamically imports three.js), so we
+// expose a promise the autoplay can await. It resolves when the scene fires
+// `onShadersReady`, and — as a guard against a failed/slow import wedging the
+// page in its locked intro forever — on a timeout or import error too.
+let resolveSceneReady;
+const sceneReady = new Promise((res) => { resolveSceneReady = res; });
+const markSceneReady = () => { if (resolveSceneReady) { resolveSceneReady(); resolveSceneReady = null; } };
+setTimeout(markSceneReady, 3000);
+
 // ---- DOM references for the scene's style output ----
 const vaporEl = document.getElementById('vapor');
 const vaporContentEl = document.querySelector('.vapor-content');
@@ -82,17 +95,26 @@ function applyDomUpdate(s) {
 // chunk). Returns a promise that resolves once the scene is live.
 // ============================================================
 async function initScene() {
-  const { createTunnelScene } = await import('./landing/tunnelScene.js');
-  sceneApi = createTunnelScene({
-    tunnelCanvas,
-    starCanvas,
-    width: viewW,
-    height: viewH,
-    dpr: window.devicePixelRatio || 1,
-    onDomUpdate: applyDomUpdate,
-    onShadersReady: () => {},
-  });
-  return sceneApi;
+  try {
+    const { createTunnelScene } = await import('./landing/tunnelScene.js');
+    sceneApi = createTunnelScene({
+      tunnelCanvas,
+      starCanvas,
+      width: viewW,
+      height: viewH,
+      dpr: window.devicePixelRatio || 1,
+      onDomUpdate: applyDomUpdate,
+      onShadersReady: markSceneReady,
+    });
+    return sceneApi;
+  } catch (err) {
+    // Don't let a failed import wedge the intro: release the gate so the
+    // autoplay still completes and unlocks scroll (the page just renders
+    // without the tunnel).
+    console.error('tunnel scene failed to load', err);
+    markSceneReady();
+    return null;
+  }
 }
 
 // ============================================================
@@ -267,7 +289,17 @@ function initAutoplay() {
 
   const callbacks = {
     setRenderTunnel: (val) => { renderTunnel = val; },
+    // gate the GPU warm-up + canvas reveal on the scene being live & compiled
+    whenSceneReady: () => sceneReady,
     onComplete: () => {
+      // Hand off to scroll EXACTLY where the page physically is. The intro keeps
+      // scrollY pinned at 0 (scroll is locked), so this is normally a no-op — but
+      // snapping smoothP to scrollP here guarantees the tube starts 1:1 with the
+      // scrollbar instead of easing across a stale gap, so the first scroll input
+      // gets an immediate response rather than a delayed catch-up sweep.
+      updateScrollMax();
+      updateScroll();
+      smoothP = scrollP;
       setupInteractionListeners();
     }
   };
