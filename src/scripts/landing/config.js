@@ -2,13 +2,12 @@
 // SHARED LANDING CONFIG
 // ------------------------------------------------------------
 // Single source of truth for the constants the tunnel renderer needs.
-// Imported by BOTH the main-thread fallback (home.js) and the
-// OffscreenCanvas worker (tunnelWorker.js). Keeping these here is what
-// stops the two renderers from drifting apart (the cause of past crashes
-// where one side's constants no longer matched the other's).
+// Imported by the main-thread host (home.js), the scene (tunnelScene.js) and
+// the build-time geometry precompute (astro.config.mjs) — so the geometry
+// baked at build time always matches the constants the runtime uses.
 //
-// This module is environment-agnostic: pure data, no DOM / window / self
-// references, so it bundles cleanly into both the page and the worker.
+// This module is environment-agnostic: pure data, no DOM / window references,
+// so it bundles cleanly into the page and runs in Node at build time.
 // ============================================================
 
 // ============================================================

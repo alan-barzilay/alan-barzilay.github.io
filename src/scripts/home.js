@@ -1,5 +1,4 @@
 import { runAutoplay } from './landing/boot.js';
-import TunnelWorker from './landing/tunnelWorker.js?worker';
 import { PHASES, CONFIG, CHAPTERS } from './landing/config.js';
 
 // ============================================================
@@ -8,12 +7,9 @@ import { PHASES, CONFIG, CHAPTERS } from './landing/config.js';
 // Owns everything that is intrinsically main-thread: the DOM (cards, progress
 // bar, vapor/tunnel styles), scroll input, and the boot/splash autoplay. The
 // tunnel + starfield rendering lives in the shared scene module
-// (./landing/tunnelScene.js), driven EITHER:
-//   · off the main thread in an OffscreenCanvas worker (preferred), or
-//   · on the main thread as a fallback (createTunnelScene here) where
-//     OffscreenCanvas is unavailable.
-// Either way the scene emits the same DOM-style updates, which this host
-// applies through applyDomUpdate()/applyShift().
+// (./landing/tunnelScene.js), which is dynamically imported and driven on the
+// main thread (createTunnelScene). The scene emits DOM-style updates, which
+// this host applies through applyDomUpdate().
 // ============================================================
 
 if ('scrollRestoration' in history) {
@@ -21,7 +17,6 @@ if ('scrollRestoration' in history) {
 }
 window.scrollTo(0, 0);
 
-let introCancelled = false;
 let introPlaying = true;
 let renderTunnel = false;
 window.CONFIG = CONFIG;
@@ -29,16 +24,22 @@ window.CONFIG = CONFIG;
 // cached viewport size — refreshed on resize
 let viewW = window.innerWidth, viewH = window.innerHeight;
 
-// reassignable: a failed worker transfer leaves these canvases dead (control
-// already handed off), so the fallback replaces them with fresh nodes.
-let tunnelCanvas = document.getElementById('tunnel-canvas');
-let starCanvas = document.getElementById('showcase-canvas');
+const tunnelCanvas = document.getElementById('tunnel-canvas');
+const starCanvas = document.getElementById('showcase-canvas');
 
-const supportsOffscreen = !!(window.OffscreenCanvas && tunnelCanvas.transferControlToOffscreen && starCanvas.transferControlToOffscreen);
+let sceneApi = null;   // set once the dynamically-imported scene is live
 
-let worker = null;
-let sceneApi = null;   // set when the main-thread fallback scene is running
-let autoplayDom = null; // the boot/splash DOM refs, kept live across a fallback canvas swap
+// ---- SCENE-READY SIGNAL ----
+// The intro autoplay must not reveal the tunnel canvas (or run its GPU "warm-up"
+// frames) until the scene actually exists AND its shaders are compiled —
+// otherwise the warm-up renders nothing and the first *visible* frame is the one
+// that stalls. `initScene()` is async (it dynamically imports three.js), so we
+// expose a promise the autoplay awaits; it resolves only when the scene fires
+// `onShadersReady`. If the scene never loads the intro simply never hands off —
+// that's the correct outcome: we'd rather hold on the intro than reveal a
+// tube-less page.
+let resolveSceneReady;
+const sceneReady = new Promise((res) => { resolveSceneReady = res; });
 
 // ---- DOM references for the scene's style output ----
 const vaporEl = document.getElementById('vapor');
@@ -47,10 +48,10 @@ const topEl   = document.getElementById('top');
 const tunnelUIEl = document.getElementById('tunnel-ui');
 
 // ============================================================
-// DOM OUTPUT APPLIERS — the single place style state from the scene is written
-// to the DOM, used by BOTH the worker's messages and the main-thread scene's
-// callbacks. Per-field change detection skips redundant style writes (most
-// fields are constant for long stretches of the scroll).
+// DOM OUTPUT APPLIER — the single place style state from the scene is written
+// to the DOM, wired up as the scene's onDomUpdate callback. Per-field change
+// detection skips redundant style writes (most fields are constant for long
+// stretches of the scroll).
 // ============================================================
 let lastHideNav = null, lastTunnelOpacity = -1, lastVaporVis = '', lastVaporOpacity = '';
 let lastMask = '', lastCe = -1;
@@ -85,39 +86,13 @@ function applyDomUpdate(s) {
 }
 
 // ============================================================
-// RENDERER WIRING — worker (preferred) or main-thread fallback.
+// RENDERER WIRING — main-thread scene.
+// ------------------------------------------------------------
+// three.js + the scene module are loaded dynamically so they stay out of the
+// main bundle (and the heavy precomputed tube geometry rides along in that lazy
+// chunk). Returns a promise that resolves once the scene is live.
 // ============================================================
-if (supportsOffscreen) {
-  worker = new TunnelWorker();
-  const offscreenTunnel = tunnelCanvas.transferControlToOffscreen();
-  const offscreenStar = starCanvas.transferControlToOffscreen();
-  worker.postMessage({
-    type: 'init',
-    canvas: offscreenTunnel,
-    starCanvas: offscreenStar,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    dpr: window.devicePixelRatio || 1,
-  }, [offscreenTunnel, offscreenStar]);
-
-  worker.onmessage = (e) => {
-    const data = e.data;
-    if (data.type === 'domUpdate') {
-      applyDomUpdate(data);
-    } else if (data.type === 'initError') {
-      // the worker couldn't bring up WebGL — recover on the main thread
-      fallbackToMainThread();
-    }
-  };
-  // backstop for any uncaught worker error not surfaced as an initError message
-  worker.onerror = () => fallbackToMainThread();
-}
-
-// Boot the main-thread fallback scene. three.js + the scene module are loaded
-// dynamically so they never reach the main bundle when the worker handles
-// rendering. Returns a promise that resolves once the scene is live.
-async function initMainThread() {
-  if (sceneApi) return sceneApi;
+async function initScene() {
   const { createTunnelScene } = await import('./landing/tunnelScene.js');
   sceneApi = createTunnelScene({
     tunnelCanvas,
@@ -126,38 +101,9 @@ async function initMainThread() {
     height: viewH,
     dpr: window.devicePixelRatio || 1,
     onDomUpdate: applyDomUpdate,
-    onShadersReady: () => {},
+    onShadersReady: resolveSceneReady,
   });
   return sceneApi;
-}
-
-// Recover from a worker that failed to initialize (or crashed): the canvases
-// were already transferred to the worker, so they can't be drawn to on the main
-// thread — replace them with fresh nodes, then bring up the main-thread scene.
-// renderTunnel / introPlaying carry the current autoplay state, so the scene
-// picks up wherever the boot sequence currently is.
-let fellBack = false;
-function fallbackToMainThread() {
-  if (fellBack || !supportsOffscreen) return;
-  fellBack = true;
-  if (worker) { worker.terminate(); worker = null; }
-  tunnelCanvas = replaceCanvas(tunnelCanvas);
-  starCanvas = replaceCanvas(starCanvas);
-  // boot.js reveals the tunnel by setting opacity on its captured canvas ref —
-  // keep it pointing at the live node so the swap doesn't leave it blank.
-  if (autoplayDom) autoplayDom.canvas = tunnelCanvas;
-  // the fresh canvases start from their CSS defaults — reset the change-detection
-  // caches so the scene's first frame writes every style afresh onto them.
-  lastHideNav = null; lastTunnelOpacity = -1; lastVaporVis = ''; lastVaporOpacity = '';
-  lastMask = ''; lastCe = -1;
-  initMainThread();
-}
-function replaceCanvas(oldEl) {
-  const fresh = document.createElement('canvas');
-  fresh.id = oldEl.id;
-  fresh.className = oldEl.className;
-  oldEl.replaceWith(fresh);
-  return fresh;
 }
 
 // ============================================================
@@ -204,7 +150,6 @@ function updateScroll() {
     const hint = document.getElementById('hint');
     if (hint) hint.classList.remove('on');
   }
-  if (worker) worker.postMessage({ type: 'scroll', p: scrollP });
 }
 
 function setupInteractionListeners() {
@@ -226,11 +171,7 @@ window.addEventListener('resize', () => {
   viewW = window.innerWidth; viewH = window.innerHeight;
   updateScrollMax();
   updateScroll();
-  if (worker) {
-    worker.postMessage({ type: 'resize', width: viewW, height: viewH, dpr: window.devicePixelRatio || 1 });
-  } else if (sceneApi) {
-    sceneApi.resize(viewW, viewH, window.devicePixelRatio || 1);
-  }
+  if (sceneApi) sceneApi.resize(viewW, viewH, window.devicePixelRatio || 1);
 });
 updateScrollMax();
 updateScroll();
@@ -261,9 +202,8 @@ const pPct = document.getElementById('pPct');
 let lastFillW = '', lastPct = -1;
 
 // ============================================================
-// MAIN-THREAD FRAME LOOP — always runs: drives the cards/progress UI and
-// smooths the scroll position. When the fallback scene is active it also
-// renders one scene frame; in worker mode the worker renders independently.
+// MAIN-THREAD FRAME LOOP — drives the cards/progress UI, smooths the scroll
+// position, and (once the scene is live) renders one scene frame per tick.
 // ============================================================
 function frame(ts) {
   // DELTA-TIME — ms since the previous frame, normalised so 1.0 == one 60fps
@@ -297,10 +237,8 @@ function frame(ts) {
   requestAnimationFrame(frame);
 }
 
-// Kick off the fallback scene (if needed) and then the UI loop.
-if (!supportsOffscreen) {
-  initMainThread();
-}
+// Kick off the scene, then the UI loop (which renders it once it's live).
+initScene();
 frame();
 
 // ============================================================
@@ -314,9 +252,8 @@ function initAutoplay() {
   updateScrollMax();
   updateScroll();
 
-  // module-scoped so a fallback canvas swap can keep `canvas` pointing at the
-  // live node (boot.js reveals the tunnel via dom.canvas.style.opacity)
-  autoplayDom = {
+  // boot.js reveals the tunnel via dom.canvas.style.opacity
+  const autoplayDom = {
     bootLog: document.getElementById('bootLog'),
     bootEl: document.getElementById('boot'),
     splashEl: document.getElementById('splash'),
@@ -333,21 +270,23 @@ function initAutoplay() {
   };
 
   const state = {
-    get introCancelled() { return introCancelled; },
-    set introCancelled(val) { introCancelled = val; },
     get introPlaying() { return introPlaying; },
-    set introPlaying(val) {
-      introPlaying = val;
-      if (worker) worker.postMessage({ type: 'setIntroPlaying', val });
-    },
+    set introPlaying(val) { introPlaying = val; },
   };
 
   const callbacks = {
-    setRenderTunnel: (val) => {
-      renderTunnel = val;
-      if (worker) worker.postMessage({ type: 'setRenderTunnel', val });
-    },
+    setRenderTunnel: (val) => { renderTunnel = val; },
+    // gate the GPU warm-up + canvas reveal on the scene being live & compiled
+    whenSceneReady: () => sceneReady,
     onComplete: () => {
+      // Hand off to scroll EXACTLY where the page physically is. The intro keeps
+      // scrollY pinned at 0 (scroll is locked), so this is normally a no-op — but
+      // snapping smoothP to scrollP here guarantees the tube starts 1:1 with the
+      // scrollbar instead of easing across a stale gap, so the first scroll input
+      // gets an immediate response rather than a delayed catch-up sweep.
+      updateScrollMax();
+      updateScroll();
+      smoothP = scrollP;
       setupInteractionListeners();
     }
   };

@@ -1,27 +1,27 @@
 // ============================================================
-// SHARED TUNNEL SCENE / SIMULATION
+// TUNNEL SCENE / SIMULATION
 // ------------------------------------------------------------
-// The three.js tunnel + 2D starfield outro, as ONE implementation used by
-// both renderers:
-//   · main-thread fallback  (home.js, dynamically imported)
-//   · OffscreenCanvas worker (tunnelWorker.js, statically imported)
+// The three.js tunnel + 2D starfield outro. Dynamically imported by the
+// main-thread host (home.js) so three.js + the precomputed geometry stay out
+// of the main bundle.
 //
 // All the per-frame math (tube build, ring layout, particle drift, camera
-// easing, starfield projection, scroll→reveal mapping) lives here exactly
-// once — this is what keeps the two renderers from drifting apart.
+// easing, starfield projection, scroll→reveal mapping) lives here.
 //
-// The module is environment-agnostic: it NEVER touches `window`, `document`
-// or `self`. Everything that crosses the environment boundary is injected:
+// The module stays decoupled from the DOM: it never reaches for `document`
+// directly. Everything that crosses the boundary is injected:
 //   · the canvases + viewport come in as parameters,
-//   · DOM-style outputs go out through the `onDomUpdate` / `onShift`
-//     callbacks (direct DOM writes on the main thread; postMessage in the
-//     worker).
+//   · DOM-style outputs go out through the `onDomUpdate` callback.
 // The host owns the rAF loop, scroll input and scroll-smoothing, then calls
 // `renderFrame(nowMs, dt, p, renderTunnel, introPlaying)` once per tick.
 // ============================================================
 import * as THREE from 'three';
 import { currentCenterline } from './centerline.js';
 import { PHASES, CONFIG, CHAPTERS } from './config.js';
+// Heavy tube wireframes, precomputed at build time (see astro.config.mjs). A
+// static import — this module is itself dynamically imported, so it stays in
+// the lazy chunk, not the main bundle.
+import { tubeWF1, tubeWF2 } from 'virtual:tunnel-geometry';
 
 // Cap the device-pixel-ratio we render at: on 2×/3× retina screens this stops
 // us drawing 4–9× the pixels for no visible gain (the single biggest GPU cost).
@@ -79,28 +79,30 @@ export function createTunnelScene({
     openingEdge.copy(curveEnd).add(perp);
   }
 
-  // Green wireframes (terminal aesthetic). Materials are created ONCE and
-  // shared across rebuilds.
+  // Green wireframes (terminal aesthetic).
   const tubeMat1 = new THREE.LineBasicMaterial({ color: 0x4f8c6f, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
   const tubeMat2 = new THREE.LineBasicMaterial({ color: 0x284a3b, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false });
   let tubeMesh1 = null, tubeMesh2 = null;
-  let activeTube = 'v1d';
+  const activeTube = 'v1d';
 
+  // The curve is still created at runtime — it's cheap and needed every frame
+  // for the camera (curve.getPointAt) and the ring layout. Only the tube
+  // MESHING was expensive, so that's what we precompute: the wireframe vertex
+  // buffers come in ready-made from virtual:tunnel-geometry, built from this
+  // exact same curve at build time, and just get wrapped in LineSegments here.
   function buildTube() {
     curve = new THREE.CatmullRomCurve3(currentCenterline(activeTube, CONFIG), false, 'catmullrom', 0.5);
     refreshCurveCache();
-    if (tubeMesh1) { scene.remove(tubeMesh1); tubeMesh1.geometry.dispose(); }
-    if (tubeMesh2) { scene.remove(tubeMesh2); tubeMesh2.geometry.dispose(); }
-    const g1 = new THREE.TubeGeometry(curve, 800, 6, 16, false);
-    tubeMesh1 = new THREE.LineSegments(new THREE.WireframeGeometry(g1), tubeMat1);
+    const g1 = new THREE.BufferGeometry();
+    g1.setAttribute('position', new THREE.BufferAttribute(tubeWF1, 3));
+    tubeMesh1 = new THREE.LineSegments(g1, tubeMat1);
     tubeMesh1.frustumCulled = false;
     scene.add(tubeMesh1);
-    g1.dispose();
-    const g2 = new THREE.TubeGeometry(curve, 600, 6, 6, false);
-    tubeMesh2 = new THREE.LineSegments(new THREE.WireframeGeometry(g2), tubeMat2);
+    const g2 = new THREE.BufferGeometry();
+    g2.setAttribute('position', new THREE.BufferAttribute(tubeWF2, 3));
+    tubeMesh2 = new THREE.LineSegments(g2, tubeMat2);
     tubeMesh2.frustumCulled = false;
     scene.add(tubeMesh2);
-    g2.dispose();
     if (rings.length) layoutRings();
   }
 
@@ -163,23 +165,29 @@ export function createTunnelScene({
   scene.add(points);
 
   // ============================================================
-  // SHADER COMPILE — async (KHR_parallel_shader_compile). Compiles + links on
-  // a background GPU thread before the first render so the first frame doesn't
-  // stall the boot-log typing. The tunnel canvas is invisible until the splash
-  // fades, so deferring the first GL render until ready is invisible.
+  // SHADER COMPILE — warm the compile/link caches before the first visible
+  // render so the first frame doesn't stall the boot-log typing. With
+  // KHR_parallel_shader_compile (most Chromium) compileAsync runs on a
+  // background GPU thread. Engines without it (e.g. Firefox) compile
+  // SYNCHRONOUSLY — and since the scene now runs on the main thread, that
+  // briefly blocks it here. Impact is low: the materials are all trivial
+  // built-ins (LineBasic/Points/MeshBasic), the compile is one-time and early,
+  // and it's hidden behind the boot screen — worst case a single-frame hitch in
+  // the boot-log typing on Firefox.
   // ============================================================
-  let shadersReady = true;
+  // shadersReady gates the first render until the GPU program is linked, and is
+  // the signal the host awaits (via onShadersReady) before revealing the canvas.
+  let shadersReady = false;
+  const markReady = () => { shadersReady = true; onShadersReady(); };
   if (typeof renderer.compileAsync === 'function') {
     renderer.compileAsync(scene, camera)
       .then(() => {
         renderer.render(scene, camera); // warm compile/link caches behind the boot screen
-        onShadersReady();
+        markReady();
       })
-      .catch(() => {
-        onShadersReady();
-      });
+      .catch(markReady);
   } else {
-    onShadersReady();
+    markReady();
   }
 
   // ============================================================
