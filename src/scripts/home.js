@@ -34,13 +34,12 @@ let sceneApi = null;   // set once the dynamically-imported scene is live
 // frames) until the scene actually exists AND its shaders are compiled —
 // otherwise the warm-up renders nothing and the first *visible* frame is the one
 // that stalls. `initScene()` is async (it dynamically imports three.js), so we
-// expose a promise the autoplay can await. It resolves when the scene fires
-// `onShadersReady`, and — as a guard against a failed/slow import wedging the
-// page in its locked intro forever — on a timeout or import error too.
+// expose a promise the autoplay awaits; it resolves only when the scene fires
+// `onShadersReady`. If the scene never loads the intro simply never hands off —
+// that's the correct outcome: we'd rather hold on the intro than reveal a
+// tube-less page.
 let resolveSceneReady;
 const sceneReady = new Promise((res) => { resolveSceneReady = res; });
-const markSceneReady = () => { if (resolveSceneReady) { resolveSceneReady(); resolveSceneReady = null; } };
-setTimeout(markSceneReady, 3000);
 
 // ---- DOM references for the scene's style output ----
 const vaporEl = document.getElementById('vapor');
@@ -94,26 +93,17 @@ function applyDomUpdate(s) {
 // chunk). Returns a promise that resolves once the scene is live.
 // ============================================================
 async function initScene() {
-  try {
-    const { createTunnelScene } = await import('./landing/tunnelScene.js');
-    sceneApi = createTunnelScene({
-      tunnelCanvas,
-      starCanvas,
-      width: viewW,
-      height: viewH,
-      dpr: window.devicePixelRatio || 1,
-      onDomUpdate: applyDomUpdate,
-      onShadersReady: markSceneReady,
-    });
-    return sceneApi;
-  } catch (err) {
-    // Don't let a failed import wedge the intro: release the gate so the
-    // autoplay still completes and unlocks scroll (the page just renders
-    // without the tunnel).
-    console.error('tunnel scene failed to load', err);
-    markSceneReady();
-    return null;
-  }
+  const { createTunnelScene } = await import('./landing/tunnelScene.js');
+  sceneApi = createTunnelScene({
+    tunnelCanvas,
+    starCanvas,
+    width: viewW,
+    height: viewH,
+    dpr: window.devicePixelRatio || 1,
+    onDomUpdate: applyDomUpdate,
+    onShadersReady: resolveSceneReady,
+  });
+  return sceneApi;
 }
 
 // ============================================================
