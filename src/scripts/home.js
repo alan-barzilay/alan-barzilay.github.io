@@ -17,7 +17,6 @@ if ('scrollRestoration' in history) {
 }
 window.scrollTo(0, 0);
 
-let introCancelled = false;
 let introPlaying = true;
 let renderTunnel = false;
 window.CONFIG = CONFIG;
@@ -281,8 +280,6 @@ function initAutoplay() {
   };
 
   const state = {
-    get introCancelled() { return introCancelled; },
-    set introCancelled(val) { introCancelled = val; },
     get introPlaying() { return introPlaying; },
     set introPlaying(val) { introPlaying = val; },
   };

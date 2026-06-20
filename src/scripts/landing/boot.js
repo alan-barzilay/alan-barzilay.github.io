@@ -139,7 +139,6 @@ export async function runAutoplay(dom, state, callbacks) {
   // 1. boot logs typing
   await typeBootLogs(dom.bootLog);
   await sleep(280);
-  if (state.introCancelled) return;
 
   // 2. smooth handoff
   dom.splashEl.style.opacity = '1';
@@ -147,14 +146,12 @@ export async function runAutoplay(dom, state, callbacks) {
   dom.bootEl.style.opacity = '0';
   await sleep(620);
   dom.bootEl.style.visibility = 'hidden';
-  if (state.introCancelled) return;
 
   // 3. show name + sub
   dom.splashName.classList.add('in');
   await sleep(260);
   dom.splashSub.classList.add('in');
   await sleep(700);
-  if (state.introCancelled) return;
 
   // 4. trigger logo reveal
   await sleep(120);
@@ -165,7 +162,6 @@ export async function runAutoplay(dom, state, callbacks) {
     logoWrap.classList.add('in');
   }
   await sleep(1600);
-  if (state.introCancelled) return;
 
   // 5. start WebGL and warm up the renderer in the background (invisible).
   // Wait for the scene to actually exist and finish compiling its shaders before
@@ -173,7 +169,6 @@ export async function runAutoplay(dom, state, callbacks) {
   // Without this gate the warm-up below renders into a null/uncompiled scene and
   // the stall just moves to the first VISIBLE frame at reveal.
   if (callbacks.whenSceneReady) await callbacks.whenSceneReady();
-  if (state.introCancelled) return;
 
   if (callbacks.setRenderTunnel) callbacks.setRenderTunnel(true);
   state.introPlaying = false;
@@ -181,7 +176,6 @@ export async function runAutoplay(dom, state, callbacks) {
   // Wait 4 frames to ensure Three.js compile/first-frame render has completed off-screen and settled
   for (let i = 0; i < 4; i++) {
     await new Promise(requestAnimationFrame);
-    if (state.introCancelled) return;
   }
   // Pause rendering during the glitch animation to save CPU/GPU resources
   if (callbacks.setRenderTunnel) callbacks.setRenderTunnel(false);
@@ -191,7 +185,6 @@ export async function runAutoplay(dom, state, callbacks) {
     dom.splashInner.classList.add('glitch-out');
   }
   await sleep(450);
-  if (state.introCancelled) return;
 
   // Resume rendering permanently now that the splash screen is gone
   if (callbacks.setRenderTunnel) callbacks.setRenderTunnel(true);
