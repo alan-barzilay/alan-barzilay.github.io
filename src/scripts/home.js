@@ -82,13 +82,20 @@ function applyDomUpdate(s) {
 // chunk). Returns a promise that resolves once the scene is live.
 // ============================================================
 async function initScene() {
-  const { createTunnelScene } = await import('./landing/tunnelScene.js');
+  // Kick off the scene-module import and the geometry fetch together so they
+  // download in parallel, then construct once both are ready.
+  const [{ createTunnelScene }, geom] = await Promise.all([
+    import('./landing/tunnelScene.js'),
+    import('./landing/tunnelGeometry.js').then(m => m.loadTunnelGeometry()),
+  ]);
   sceneApi = createTunnelScene({
     tunnelCanvas,
     starCanvas,
     width: viewW,
     height: viewH,
     dpr: window.devicePixelRatio || 1,
+    tubeWF1: geom.tubeWF1,
+    tubeWF2: geom.tubeWF2,
     onDomUpdate: applyDomUpdate,
     onShadersReady: () => {},
   });

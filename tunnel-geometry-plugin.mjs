@@ -1,5 +1,8 @@
 // @ts-check
 import { fileURLToPath } from 'node:url';
+import { writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import zlib from 'node:zlib';
 
 // ============================================================
 // virtual:tunnel-geometry — precompute the heavy tube wireframes at build time.
@@ -8,15 +11,20 @@ import { fileURLToPath } from 'node:url';
 // single most expensive part of booting the landing scene (~510 ms, dominated
 // by WireframeGeometry's edge dedup). The geometry is 100% deterministic (pure
 // sin math + CONFIG bends, no Math.random), so we compute the vertex buffers
-// here — with the SAME installed three the app bundles — and ship them as raw
-// base64-encoded Float32Arrays.
+// here — with the SAME installed three the app bundles — and write them to a
+// pre-gzipped binary asset in public/. The browser fetches it and inflates it
+// with DecompressionStream, so the costly atob loop AND the parse of a ~1.5 MB
+// JS string literal at module-eval are both gone. (Pre-gzipping is required
+// because the GH Pages CDN won't compress application/octet-stream.)
 //
 // Recomputed from source on every build (and on demand in dev), so there is no
 // persisted artifact to commit, regenerate, or keep in sync: it can never drift
 // from centerline.js / config.js / the three version. Editing a watched input
-// invalidates the module (addWatchFile). The module is imported by
-// tunnelScene.js — itself dynamically imported — so it lands in the lazy chunk,
-// never the main bundle.
+// invalidates the module (addWatchFile). The virtual module now exports only
+// metadata (URL + the two array lengths); the loader (tunnelGeometry.js) slices
+// the inflated buffer by those lengths, and the ?v=<hash> keeps the binary in
+// lockstep with the code that slices it (so a returning visitor on GH Pages'
+// 10-min cache can't pair new code with a stale buffer).
 // ============================================================
 export function tunnelGeometryPlugin() {
   const VIRTUAL_ID = 'virtual:tunnel-geometry';
@@ -41,27 +49,23 @@ export function tunnelGeometryPlugin() {
 
       // Mirror tunnelScene.js buildTube() EXACTLY (same args → same vertex order).
       const curve = new THREE.CatmullRomCurve3(currentCenterline('v1d', CONFIG), false, 'catmullrom', 0.5);
-      const wf1 = new THREE.WireframeGeometry(new THREE.TubeGeometry(curve, 800, 6, 16, false));
-      const wf2 = new THREE.WireframeGeometry(new THREE.TubeGeometry(curve, 600, 6, 6, false));
+      const p1 = new THREE.WireframeGeometry(new THREE.TubeGeometry(curve, 800, 6, 16, false)).attributes.position.array;
+      const p2 = new THREE.WireframeGeometry(new THREE.TubeGeometry(curve, 600, 6, 6, false)).attributes.position.array;
 
-      const encode = (attr) => {
-        const a = attr.array; // Float32Array
-        return Buffer.from(a.buffer, a.byteOffset, a.byteLength).toString('base64');
-      };
-      const b1 = encode(wf1.attributes.position);
-      const b2 = encode(wf2.attributes.position);
+      // Concatenate the two position buffers into one raw blob [wf1][wf2], then
+      // pre-gzip it (the loader slices it back apart by len1/len2). Lengths are
+      // DERIVED from the arrays — never hardcoded — so they can't drift.
+      const raw = Buffer.allocUnsafe(p1.byteLength + p2.byteLength);
+      Buffer.from(p1.buffer, p1.byteOffset, p1.byteLength).copy(raw, 0);
+      Buffer.from(p2.buffer, p2.byteOffset, p2.byteLength).copy(raw, p1.byteLength);
 
-      // Decode into a FRESH 0-offset buffer so the Float32Array view is 4-byte
-      // aligned. base64 → bytes → Float32Array is ~1 ms for a few hundred KB.
-      return `// AUTO-GENERATED at build time by the tunnel-geometry Vite plugin — do not edit.
-function decode(s) {
-  const bin = atob(s);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new Float32Array(bytes.buffer);
-}
-export const tubeWF1 = decode(${JSON.stringify(b1)});
-export const tubeWF2 = decode(${JSON.stringify(b2)});
+      const gz = zlib.gzipSync(raw, { level: 9 });               // pre-compress; GH Pages won't
+      const hash = createHash('sha256').update(gz).digest('hex').slice(0, 8);
+      writeFileSync(fileURLToPath(new URL('./public/tunnel-geometry.bin', import.meta.url)), gz);
+
+      return `export const geometryUrl = '/tunnel-geometry.bin?v=${hash}';
+export const len1 = ${p1.length};
+export const len2 = ${p2.length};
 `;
     },
   };

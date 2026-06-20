@@ -18,10 +18,10 @@
 import * as THREE from 'three';
 import { currentCenterline } from './centerline.js';
 import { PHASES, CONFIG, CHAPTERS } from './config.js';
-// Heavy tube wireframes, precomputed at build time (see astro.config.mjs). A
-// static import — this module is itself dynamically imported, so it stays in
-// the lazy chunk, not the main bundle.
-import { tubeWF1, tubeWF2 } from 'virtual:tunnel-geometry';
+// Heavy tube wireframes, precomputed at build time (see astro.config.mjs), are
+// passed in as `tubeWF1`/`tubeWF2` params: the host fetches the pre-gzipped
+// binary asset (tunnelGeometry.js) in parallel with this chunk and hands the
+// inflated Float32Array views to createTunnelScene().
 
 // Cap the device-pixel-ratio we render at: on 2×/3× retina screens this stops
 // us drawing 4–9× the pixels for no visible gain (the single biggest GPU cost).
@@ -33,6 +33,8 @@ export function createTunnelScene({
   width,
   height,
   dpr,
+  tubeWF1,          // Float32Array  precomputed wireframe vertices (tube 1)
+  tubeWF2,          // Float32Array  precomputed wireframe vertices (tube 2)
   onDomUpdate,      // (state) => void   apply vapor/tunnel style state
   onShadersReady,   // () => void
 }) {
